@@ -9,7 +9,7 @@
 
 int main(void)
 {
-	assert(!uart_init());
+	assert(uart_init());
 	
 	printf("UART test.\n");
 
