@@ -32,7 +32,7 @@ static int m_uart_printchar(char char_to_print, FILE *stream)
     }
 
     // busy-wait until bit UDRE is set in UCSRA
-    while ( bit_is_clear(UCSR0A, UDRE) );
+    while ( bit_is_clear(UCSR0A, UDRE0) );
 
     UDR0 = char_to_print; // write out character
 
