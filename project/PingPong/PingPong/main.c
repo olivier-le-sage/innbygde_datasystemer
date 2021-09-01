@@ -4,7 +4,6 @@
  * Created: 2021-08-25 11:56:40 PM
  */
 
-#include <stdio.h>
 #include "ping_pong.h"
 #include "rs232.h"
 
@@ -20,5 +19,11 @@ int main(void)
 		printf("UART test.\n");
 		__NOP(); __NOP(); __NOP();
 	}
-}
 
+	uint32_t input;
+	for (;;)
+	{
+		scanf("Type some number (not 'some number'): %d\n", &input);
+		printf("You typed: %d\n", input);
+	}
+}
