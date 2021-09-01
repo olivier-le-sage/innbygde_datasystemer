@@ -2,10 +2,20 @@
  * Use UART.
  */
 
+/*
+UMSEL to select sync/async
+UBBR for baudrate (UBBR = fOsc/(16 BAUD) - 1)
+*/
+
 #include <stdio.h>
 #include <avr/sfr_defs.h>
 #include <avr/io.h>
 #include "rs232.h"
+
+#define FOSC 1843200  /* Clock speed */
+#define BAUDRATE 9600
+
+static const unsigned int m_ubbr_value = ((FOSC / 16) / BAUDRATE - 1);
 
 /* Function prototypes */
 static int m_uart_printchar(char char_to_print, FILE *stream);
@@ -22,9 +32,9 @@ static int m_uart_printchar(char char_to_print, FILE *stream)
     }
 
     // busy-wait until bit UDRE is set in UCSRA
-    while ( bit_is_clear(UCSRA, UDRE) );
+    while ( bit_is_clear(UCSR0A, UDRE) );
 
-    UDR = char_to_print; // write out character
+    UDR0 = char_to_print; // write out character
 
     return 0;
 }
@@ -48,6 +58,14 @@ static int m_uart_getchar(FILE *stream)
 
 bool uart_init(void)
 {
+	/* Set baud rate */
+	UBRR0H = (uint8_t) (m_ubbr_value >> 8);
+	UBRR0L = (uint8_t) m_ubbr_value;
+	/* Enable receiver and transmitter */
+	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+	/* Set frame format: 8 data, 2 stop bit */
+	UCSR0C = (1 << URSEL0) | (1 << USBS0) | (3 << UCSZ00);
+
     stdout = &uart_stream;
     return true;
 }
