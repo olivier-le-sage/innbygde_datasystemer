@@ -8,12 +8,17 @@
 #include "ping_pong.h"
 #include "rs232.h"
 
+#define __NOP() {__asm__ __volatile__ ("nop");}
+
 int main(void)
 {
 	assert(uart_init());
-	
-	printf("UART test.\n");
 
-	for (;;);
+	for (;;)
+	{
+	    __NOP(); __NOP(); __NOP();
+		printf("UART test.\n");
+		__NOP(); __NOP(); __NOP();
+	}
 }
 
