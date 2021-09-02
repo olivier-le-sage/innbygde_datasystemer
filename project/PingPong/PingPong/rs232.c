@@ -12,7 +12,7 @@ UBBR for baudrate (UBBR = fOsc/(16 BAUD) - 1)
 #include <avr/io.h>
 #include "rs232.h"
 
-#define FOSC 1843200  /* Clock speed */
+#define FOSC 4915200  /* Clock speed */
 #define BAUDRATE 9600
 
 static const unsigned int m_ubbr_value = ((FOSC / 16) / BAUDRATE - 1);
