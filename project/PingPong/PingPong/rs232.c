@@ -22,7 +22,7 @@ static int m_uart_printchar(char char_to_print, FILE *stream);
 static int m_uart_getchar(FILE *stream);
 
 // allocate output stream statically to avoid malloc()
-static FILE uart_stream = FDEV_SETUP_STREAM(m_uart_printchar, m_uart_getchar, _FDEV_SETUP_WRITE);
+static FILE uart_stream = FDEV_SETUP_STREAM(m_uart_printchar, m_uart_getchar, _FDEV_SETUP_RW);
 
 static int m_uart_printchar(char char_to_print, FILE *stream)
 {
@@ -41,19 +41,27 @@ static int m_uart_printchar(char char_to_print, FILE *stream)
 
 static int m_uart_getchar(FILE *stream)
 {
-    // there should be no uart stream errors.
-    assert(ferror(&uart_stream));
-
-    if (feof(&uart_stream)) // test for end-of-file
+    if (ferror(&uart_stream))
+	{
+		return _FDEV_ERR;
+	}
+    else if (feof(&uart_stream))
     {
-        // not sure how to handle; assert for now
-        assert(false);
-        return 0;
+        return _FDEV_EOF;
     }
     else
     {
         return fgetc(&uart_stream);
     }
+}
+
+char uart_fetch_by_force(void)
+{
+	// Blocking routine implementation: wait until RX flag
+	while ( !(UCSR0A & (1 << RXC0)));
+	
+	// Fetch character from UDR
+	return UDR0;
 }
 
 bool uart_init(void)
@@ -66,5 +74,6 @@ bool uart_init(void)
 	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
 
     stdout = &uart_stream;
+	stdin = &uart_stream;
     return true;
 }

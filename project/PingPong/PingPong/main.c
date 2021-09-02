@@ -13,17 +13,11 @@ int main(void)
 {
 	assert(uart_init());
 
+	char input;
 	for (;;)
 	{
-	    __NOP(); __NOP(); __NOP();
-		printf("UART test.\n");
-		__NOP(); __NOP(); __NOP();
-	}
-
-	uint32_t input;
-	for (;;)
-	{
-		scanf("Type some number (not 'some number'): %d\n", &input);
-		printf("You typed: %d\n", input);
+		input = uart_fetch_by_force();
+		//scanf("Type some number (not 'some number'): %d\n", &input);
+		printf("You typed: %c\n", input);
 	}
 }
