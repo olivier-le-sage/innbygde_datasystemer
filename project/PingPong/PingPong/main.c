@@ -9,8 +9,13 @@
 
 #define __NOP() {__asm__ __volatile__ ("nop");}
 
+// initialize external memory mapping
+// Sets the SRAM enable bit in the MCU control register
+#define ENABLE_SRAM() {MCUCR |= _BV(SRE);}
+
 int main(void)
 {
+	ENABLE_SRAM();
 	assert(uart_init());
 
 	char input;
