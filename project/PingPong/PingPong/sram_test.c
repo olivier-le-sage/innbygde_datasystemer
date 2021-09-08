@@ -1,6 +1,8 @@
 // Boilerplate test driver for the SRAM chip.
 
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
 #include "sram_test.h"
 
 void SRAM_test(void)
