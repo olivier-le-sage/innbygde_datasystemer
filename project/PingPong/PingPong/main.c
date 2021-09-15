@@ -22,10 +22,7 @@ int main(void)
 	assert(uart_init());
 	joystick_init();
 
-
 	//SRAM_test();
-
-	SRAM_test();
 
 	char input;
 	for (;;)
