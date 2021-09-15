@@ -6,12 +6,21 @@
 
 #include "ping_pong.h"
 #include "rs232.h"
+#include "sram_test.h"
 
 #define __NOP() {__asm__ __volatile__ ("nop");}
 
+// initialize external memory mapping
+// Sets the SRAM enable bit in the MCU control register
+// and masks the top 4 bits of the addressing (reserved for JTAG)
+#define ENABLE_SRAM() {MCUCR |= _BV(SRE); SFIOR |= _BV(XMM2);}
+
 int main(void)
 {
+	ENABLE_SRAM();
 	assert(uart_init());
+
+	SRAM_test();
 
 	char input;
 	for (;;)
