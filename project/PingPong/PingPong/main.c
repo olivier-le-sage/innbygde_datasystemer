@@ -7,6 +7,7 @@
 #include "ping_pong.h"
 #include "rs232.h"
 #include "sram_test.h"
+#include "joystick.h"
 
 #define __NOP() {__asm__ __volatile__ ("nop");}
 
@@ -19,6 +20,10 @@ int main(void)
 {
 	ENABLE_SRAM();
 	assert(uart_init());
+	joystick_init();
+
+
+	//SRAM_test();
 
 	SRAM_test();
 
