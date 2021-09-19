@@ -27,17 +27,24 @@ int main(void)
 	// Navigate user interface
 	while(1)
 	{
-		joystick_direction_t joystick_x_axis;
-		joystick_direction_t joystick_y_axis;
-		get_joystick_dir(&joystick_x_axis, &joystick_y_axis);
+		joystick_direction_t x_dir;
+		joystick_direction_t y_dir;
+		get_joystick_dir(&x_dir, &y_dir);
+		
+		printf("Joystick: x-axis dir=%d, y-axis dir=%d\n", x_dir, y_dir);
+
+		sliders_position_t sliders;
+		get_sliders_pos(&sliders);
+		printf("left slider=0x%x, right slider=0x%x\n", sliders.left_slider_pos, sliders.right_slider_pos);
+		printf("\n");
 		
 		ui_cmd_t ui_cmd = UI_DO_NOTHING;
 		
-		if (joystick_x_axis == NEUTRAL && joystick_y_axis == UP)
+		if (x_dir == NEUTRAL && y_dir == UP)
 		{
 			ui_cmd = UI_SELECT_UP;
 		}
-		else if (joystick_x_axis == NEUTRAL && joystick_y_axis == DOWN)
+		else if (x_dir == NEUTRAL && y_dir == DOWN)
 		{
 			ui_cmd = UI_SELECT_DOWN;
 		}
