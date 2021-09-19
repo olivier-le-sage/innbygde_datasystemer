@@ -21,9 +21,14 @@ int main(void)
 	assert(joystick_init());
 
 	// debug ADC
-	uint8_t buffer[2] = {0x00, 0x00};
-	adc_test((uint8_t*)buffer);
-	printf("Buffer contents: [%u, %u]\n", buffer[0], buffer[1]);
+	uint8_t buffer[2] = {0};
+	while (1)
+	{
+		memset(&buffer, 0, sizeof(buffer));
+		adc_test((uint8_t*)buffer);
+		printf("Buffer contents: [0x%x, 0x%x]\n", buffer[0], buffer[1]);
+	}
+
 
 	char input;
 	for (;;)
