@@ -29,7 +29,7 @@ int main(void)
 		printf("Joystick: x-axis dir=%d, y-axis dir=%d\n", first_direction, second_direction);
 		sliders_position_t sliders;
 		get_sliders_pos(&sliders);
-		printf("left slider=%d, right slider=%d\n", sliders.left_slider_pos, sliders.right_slider_pos);
+		printf("left slider=0x%x, right slider=0x%x\n", sliders.left_slider_pos, sliders.right_slider_pos);
 		printf("\n");
 	}
 
