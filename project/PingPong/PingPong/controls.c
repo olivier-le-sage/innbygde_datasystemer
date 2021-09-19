@@ -134,7 +134,7 @@ void get_joystick_dir(joystick_direction_t *p_first_dir_out, joystick_direction_
 	}
 }
 
-void get_slider_pos(sliders_position_t *p_slider_position_out)
+void get_sliders_pos(sliders_position_t *p_slider_position_out)
 {
 	uint8_t adc_channels[M_ADC_NUM_CH];
 	m_run_sampling((uint8_t*)adc_channels);

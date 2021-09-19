@@ -27,6 +27,10 @@ int main(void)
 		joystick_direction_t second_direction;
 		get_joystick_dir(&first_direction, &second_direction);
 		printf("Joystick: x-axis dir=%d, y-axis dir=%d\n", first_direction, second_direction);
+		sliders_position_t sliders;
+		get_sliders_pos(&sliders);
+		printf("left slider=%d, right slider=%d\n", sliders.left_slider_pos, sliders.right_slider_pos);
+		printf("\n");
 	}
 
 	char input;
