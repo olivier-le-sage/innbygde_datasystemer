@@ -6,6 +6,8 @@ controls.c
 
 main.c
 
+oled.c
+
 rs232.c
 
 sram_test.c

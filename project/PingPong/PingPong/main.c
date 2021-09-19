@@ -8,6 +8,7 @@
 #include "rs232.h"
 #include "sram_test.h"
 #include "controls.h"
+#include "oled.h"
 
 // initialize external memory mapping
 // Sets the SRAM enable bit in the MCU control register
@@ -19,6 +20,7 @@ int main(void)
 	ENABLE_SRAM();
 	assert(uart_init());
 	assert(joystick_init());
+	assert(oled_init());
 
 	// Test controls
 	while(1)
