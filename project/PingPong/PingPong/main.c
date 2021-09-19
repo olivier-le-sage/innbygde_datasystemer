@@ -9,6 +9,7 @@
 #include "sram_test.h"
 #include "controls.h"
 #include "oled.h"
+#include "ui.h"
 
 // initialize external memory mapping
 // Sets the SRAM enable bit in the MCU control register
@@ -21,18 +22,27 @@ int main(void)
 	assert(uart_init());
 	assert(joystick_init());
 	assert(oled_init());
+	assert(ui_init());
 
-	// Test controls
+	// Navigate user interface
 	while(1)
 	{
-		joystick_direction_t first_direction;
-		joystick_direction_t second_direction;
-		get_joystick_dir(&first_direction, &second_direction);
-		printf("Joystick: x-axis dir=%d, y-axis dir=%d\n", first_direction, second_direction);
-		sliders_position_t sliders;
-		get_sliders_pos(&sliders);
-		printf("left slider=0x%x, right slider=0x%x\n", sliders.left_slider_pos, sliders.right_slider_pos);
-		printf("\n");
+		joystick_direction_t joystick_x_axis;
+		joystick_direction_t joystick_y_axis;
+		get_joystick_dir(&joystick_x_axis, &joystick_y_axis);
+		
+		ui_cmd_t ui_cmd = UI_DO_NOTHING;
+		
+		if (joystick_x_axis == NEUTRAL && joystick_y_axis == UP)
+		{
+			ui_cmd = UI_SELECT_UP;
+		}
+		else if (joystick_x_axis == NEUTRAL && joystick_y_axis == DOWN)
+		{
+			ui_cmd = UI_SELECT_DOWN;
+		}
+		
+		ui_issue_cmd(ui_cmd);
 	}
 
 	char input;
