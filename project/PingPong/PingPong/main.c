@@ -7,7 +7,7 @@
 #include "ping_pong.h"
 #include "rs232.h"
 #include "sram_test.h"
-#include "joystick.h"
+#include "controls.h"
 
 // initialize external memory mapping
 // Sets the SRAM enable bit in the MCU control register
@@ -20,15 +20,14 @@ int main(void)
 	assert(uart_init());
 	assert(joystick_init());
 
-	// debug ADC
-	uint8_t buffer[2] = {0};
-	while (1)
+	// Test controls
+	while(1)
 	{
-		memset(&buffer, 0, sizeof(buffer));
-		adc_test((uint8_t*)buffer);
-		printf("Buffer contents: [0x%x, 0x%x]\n", buffer[0], buffer[1]);
+		joystick_direction_t first_direction;
+		joystick_direction_t second_direction;
+		get_joystick_dir(&first_direction, &second_direction);
+		printf("Joystick: x-axis dir=%d, y-axis dir=%d\n", first_direction, second_direction);
 	}
-
 
 	char input;
 	for (;;)

@@ -10,4 +10,6 @@
 #include <avr/io.h>
 
 #define F_CPU 4915200  /* Clock speed */
+
+/* Utility macros */
 #define __NOP() {__asm__ __volatile__ ("nop");}

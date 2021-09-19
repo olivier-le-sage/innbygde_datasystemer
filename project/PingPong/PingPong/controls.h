@@ -15,23 +15,27 @@
 typedef enum
 {
 	NEUTRAL = 0,
-	LEFT,
-	RIGHT,
-	UP,
-	DOWN,
+	LEFT    = 1,
+	RIGHT   = 2,
+	UP      = 3,
+	DOWN    = 4,
 } joystick_direction_t;
 
 typedef struct
 {
-	uint8_t             x;
-	uint8_t             y;
+	uint8_t x;
+	uint8_t y;
 } joystick_position_t;
 
-// for debugging only
-void adc_test(uint8_t *p_sample_buffer);
+typedef struct
+{
+	uint8_t right_slider_pos;
+	uint8_t left_slider_pos;
+} sliders_position_t;
 
 bool joystick_init(void);
 void get_joystick_pos(joystick_position_t *p_joystick_position_out);
 void get_joystick_dir(joystick_direction_t *p_first_dir_out, joystick_direction_t *p_second_dir_out);
+void get_sliders_pos(sliders_position_t *p_sliders_position_out);
 
 #endif /* JOYSTICK_H_ */
