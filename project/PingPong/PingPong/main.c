@@ -8,7 +8,6 @@
 #include "rs232.h"
 #include "sram_test.h"
 #include "controls.h"
-#include "oled.h"
 #include "ui.h"
 
 // initialize external memory mapping
@@ -21,7 +20,6 @@ int main(void)
 	ENABLE_SRAM();
 	assert(uart_init());
 	assert(joystick_init());
-	assert(oled_init());
 	assert(ui_init());
 
 	// Navigate user interface
@@ -30,16 +28,18 @@ int main(void)
 		joystick_direction_t x_dir;
 		joystick_direction_t y_dir;
 		get_joystick_dir(&x_dir, &y_dir);
-		
+
+		/*
 		printf("Joystick: x-axis dir=%d, y-axis dir=%d\n", x_dir, y_dir);
 
 		sliders_position_t sliders;
 		get_sliders_pos(&sliders);
 		printf("left slider=0x%x, right slider=0x%x\n", sliders.left_slider_pos, sliders.right_slider_pos);
 		printf("\n");
-		
+		*/
+
 		ui_cmd_t ui_cmd = UI_DO_NOTHING;
-		
+
 		if (x_dir == NEUTRAL && y_dir == UP)
 		{
 			ui_cmd = UI_SELECT_UP;
@@ -48,15 +48,7 @@ int main(void)
 		{
 			ui_cmd = UI_SELECT_DOWN;
 		}
-		
-		ui_issue_cmd(ui_cmd);
-	}
 
-	char input;
-	for (;;)
-	{
-		input = uart_fetch_by_force();
-		//scanf("Type some number (not 'some number'): %d\n", &input);
-		printf("You typed: %c\n", input);
+		ui_issue_cmd(ui_cmd);
 	}
 }

@@ -38,15 +38,19 @@ static ui_submenu_t *mp_current_menu;
 void m_update_display(void)
 {
 	/* Print out current menu to OLED display */
-	// TODO
-	//oled_goto_line(...)
-	//oled_clear_line(...)
-	//oled_print(...)
+	oled_home();
+
+	for (uint8_t i = 0; i < mp_current_menu->num_submenu_options; i++)
+	{
+		oled_clear_line(i);
+		oled_print(mp_current_menu->submenu_options[i]);
+	}
 }
 
 
 bool ui_init(void)
 {
+	assert(oled_init());
 	assert(NUMELTS(m_main_menu.submenu_options) <= m_main_menu.num_submenu_options);
 	assert(m_main_menu.num_submenu_options <= MAX_SUBMENU_OPTIONS);
 

@@ -25,6 +25,8 @@ static FILE uart_stream = FDEV_SETUP_STREAM(m_uart_printchar, m_uart_getchar, _F
 
 static int m_uart_printchar(char char_to_print, FILE *stream)
 {
+	stdout = &uart_stream;
+
     if (char_to_print == '\n')
     {
         return m_uart_printchar('\r', stream);
@@ -40,6 +42,8 @@ static int m_uart_printchar(char char_to_print, FILE *stream)
 
 static int m_uart_getchar(FILE *stream)
 {
+	stdin = &uart_stream;
+
     if (ferror(&uart_stream))
 	{
 		return _FDEV_ERR;
@@ -71,8 +75,5 @@ bool uart_init(void)
 	
 	/* Enable transmitter and receiver */
 	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-
-    stdout = &uart_stream;
-	stdin = &uart_stream;
     return true;
 }
