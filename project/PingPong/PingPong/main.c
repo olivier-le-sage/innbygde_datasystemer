@@ -7,8 +7,7 @@
 #include "ping_pong.h"
 #include "rs232.h"
 #include "sram_test.h"
-
-#define __NOP() {__asm__ __volatile__ ("nop");}
+#include "controls.h"
 
 // initialize external memory mapping
 // Sets the SRAM enable bit in the MCU control register
@@ -19,8 +18,20 @@ int main(void)
 {
 	ENABLE_SRAM();
 	assert(uart_init());
+	assert(joystick_init());
 
-	SRAM_test();
+	// Test controls
+	while(1)
+	{
+		joystick_direction_t first_direction;
+		joystick_direction_t second_direction;
+		get_joystick_dir(&first_direction, &second_direction);
+		printf("Joystick: x-axis dir=%d, y-axis dir=%d\n", first_direction, second_direction);
+		sliders_position_t sliders;
+		get_sliders_pos(&sliders);
+		printf("left slider=0x%x, right slider=0x%x\n", sliders.left_slider_pos, sliders.right_slider_pos);
+		printf("\n");
+	}
 
 	char input;
 	for (;;)
