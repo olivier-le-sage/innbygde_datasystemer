@@ -23,22 +23,21 @@ int main(void)
 	assert(ui_init());
 
 	// Navigate user interface
+	ui_cmd_t ui_cmd;
+	joystick_direction_t x_dir;
+	joystick_direction_t y_dir;
+
 	while(1)
 	{
-		joystick_direction_t x_dir;
-		joystick_direction_t y_dir;
 		get_joystick_dir(&x_dir, &y_dir);
-
-		/*
-		printf("Joystick: x-axis dir=%d, y-axis dir=%d\n", x_dir, y_dir);
+		printf("Joystick: x-axis dir=%s, y-axis dir=%s\n", joystick_dir_to_str(x_dir), joystick_dir_to_str(y_dir));
 
 		sliders_position_t sliders;
 		get_sliders_pos(&sliders);
-		printf("left slider=0x%x, right slider=0x%x\n", sliders.left_slider_pos, sliders.right_slider_pos);
+		printf("left slider=%d%%, right slider=%d%%\n", (sliders.left_slider_pos*100)/0xFF, (sliders.right_slider_pos*100)/0xFF);
 		printf("\n");
-		*/
-
-		ui_cmd_t ui_cmd = UI_DO_NOTHING;
+		
+		ui_cmd = UI_DO_NOTHING;
 
 		if (x_dir == NEUTRAL && y_dir == UP)
 		{
