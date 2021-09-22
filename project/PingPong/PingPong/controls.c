@@ -32,7 +32,7 @@
 // TODO: replace this temp value with one which is fine-tuned for a good user experience
 #define M_JOYSTICK_X_AXIS_NEUTRAL  (0xA0)
 #define M_JOYSTICK_Y_AXIS_NEUTRAL  (0x9E)
-#define M_JOYSTICK_DIR_THRESHOLD   (0x40) // relative percentage to neutral required to exit the "dead zone"
+#define M_JOYSTICK_DIR_THRESHOLD   (0x40) // relative difference to neutral required to exit the "dead zone"
 #define M_JOYSTICK_LEFT_THRESHOLD  (M_JOYSTICK_X_AXIS_NEUTRAL - M_JOYSTICK_DIR_THRESHOLD)
 #define M_JOYSTICK_RIGHT_THRESHOLD (M_JOYSTICK_X_AXIS_NEUTRAL + M_JOYSTICK_DIR_THRESHOLD)
 #define M_JOYSTICK_DOWN_THRESHOLD  (M_JOYSTICK_Y_AXIS_NEUTRAL - M_JOYSTICK_DIR_THRESHOLD)
