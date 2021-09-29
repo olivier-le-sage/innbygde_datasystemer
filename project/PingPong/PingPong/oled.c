@@ -53,8 +53,8 @@ static char m_oled_init_routine[] =
     OLEDC_SET_CONTRAST_CONTROL_1(0x50), // 0x50,
     OLEDC_SET_PRE_CHARGE_PERIOD_0, // 0xD9,
     OLEDC_SET_PRE_CHARGE_PERIOD_1(0x21),
-    OLEDC_SET_MEM_ADDR_MODE_0, // Set page addressing mode
-    OLEDC_SET_MEM_ADDR_MODE_1(0x2), // 0x02,
+    OLEDC_SET_MEM_ADDR_MODE_0,
+    OLEDC_SET_MEM_ADDR_MODE_1(0x2), // Set page addressing mode
     OLEDC_SET_VCOMH_DESELECT_LVL_0, // Set VCOMH deselect level 0.83 * Vcc
     OLEDC_SET_VCOMH_DESELECT_LVL_1(0x3), // 0x30,
     OLEDC_IREF_SELECTION_0, // 0xAD,
@@ -93,21 +93,12 @@ bool oled_init(void)
         EXT_OLED->CMD = m_oled_init_routine[i];
     }
 
-    //ext_oled_cmd[0] = OLEDC_ENTIRE_DISPLAY_ON(0x1);
-
-    for (uint16_t i = 0; i < 8; i++)
+    for (uint8_t line = 0; line < 8; line++)
     {
-        EXT_OLED->CMD = 0x22;
-        EXT_OLED->CMD = 0xb0 | i; // 1st page
-        EXT_OLED->CMD = 0x00;
-        EXT_OLED->CMD = 0x10; // select leftmost column as start column within the page
-
-        for (uint16_t j = 0; j < 128; j++)
-        {
-            EXT_OLED->DATA = 0x55;
-        }
+        oled_clear_line(line);
     }
 
+    oled_home();
 
     return true;
 }
@@ -119,32 +110,43 @@ void oled_reset(void)
 
 void oled_home(void)
 {
-    //Set the cursor to the start of the screen
-    EXT_OLED->CMD = 0x21;
-    EXT_OLED->CMD = 0x00;
-    EXT_OLED->CMD = 0x7f;
-
-    EXT_OLED->CMD = 0x22;
-    EXT_OLED->CMD = 0x00;
-    EXT_OLED->CMD = 0x7;
+    oled_pos(0, 0);
 }
 
 void oled_goto_line(uint8_t line)
 {
-    // TODO
+    assert(line < 8);
+
+    EXT_OLED->CMD = 0xb0 | line;
 }
 
 void oled_goto_column(uint8_t column)
 {
-    // TODO
+    assert(column < 128);
+
+    // lower 4 bits
+    EXT_OLED->CMD = 0x00 | (column & 0x0F);
+
+    // upper 4 bits
+    EXT_OLED->CMD = 0x10 | (column & 0xF0)
 }
 
 void oled_clear_line(uint8_t line)
 {
-    // TODO
+    oled_goto_line(line);
+
+    for (uint8_t i = 0; i < 128; i++)
+    {
+        EXT_OLED->DATA = 0;
+    }
 }
 
 void oled_pos(uint8_t row, uint8_t column)
 {
-    // TODO
+    /* Treat each page as a row
+     * That gives us 8 rows in total */
+    oled_goto_line(row);
+
+    /* Column selection */
+    oled_goto_column(column);
 }
