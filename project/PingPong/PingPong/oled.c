@@ -128,7 +128,7 @@ void oled_goto_column(uint8_t column)
     EXT_OLED->CMD = 0x00 | (column & 0x0F);
 
     // upper 4 bits
-    EXT_OLED->CMD = 0x10 | (column & 0xF0)
+    EXT_OLED->CMD = 0x10 | (column & 0xF0);
 }
 
 void oled_clear_line(uint8_t line)
