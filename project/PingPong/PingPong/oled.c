@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "ext_peripherals.h"
 #include "oled.h"
 #include "oled_types.h"
 #include "fonts.h"
@@ -20,7 +21,7 @@ static char oled_init_routine[] =
 	0x12,
 	0xC8,
 	0xA8,
-	0x3F, 
+	0x3F,
 	0xD5,
 	0x80,
 	0x81,
@@ -43,7 +44,7 @@ static char oled_init_routine[] =
 {
 	OLEDC_SET_DISPLAY_ON_OFF(0x0), // Turn display off
 	OLEDC_SET_SEGMENT_REMAP(0x1), // Map column addr 127 to SEG0
-	OLEDC_SET_COM_PIN_HW_CFG_0, // 
+	OLEDC_SET_COM_PIN_HW_CFG_0, //
 	OLEDC_SET_COM_PIN_HW_CFG_1(0x1), // Set alternative COM pin config
 	OLEDC_SET_COM_OUT_SCAN_DIR(0x1), // Set COM output scan direction from COM0-COM[N-1]
 	OLEDC_SET_MUX_RATIO_0, // Set multiplex ratio to 63
@@ -54,7 +55,7 @@ static char oled_init_routine[] =
 	OLEDC_SET_CONTRAST_CONTROL_1(0x50), // 0x50,
 	OLEDC_SET_PRE_CHARGE_PERIOD_0, // 0xD9,
 	OLEDC_SET_PRE_CHARGE_PERIOD_1(0x21),
-	OLEDC_SET_MEM_ADDR_MODE_0, // Set page addressing mode 
+	OLEDC_SET_MEM_ADDR_MODE_0, // Set page addressing mode
 	OLEDC_SET_MEM_ADDR_MODE_1(0x2), // 0x02,
 	OLEDC_SET_VCOMH_DESELECT_LVL_0, // Set VCOMH deselect level 0.83 * Vcc
 	OLEDC_SET_VCOMH_DESELECT_LVL_1(0x3), // 0x30,
@@ -68,15 +69,13 @@ static char oled_init_routine[] =
 static int m_oled_printchar(char char_to_print, FILE *stream)
 {
 	assert((uint8_t)char_to_print <= NUM_LETTERS_IN_FONT);
-	
-	// TODO: Write oled_char_to_print to OLED data bus
-	volatile uint8_t *ext_oled = (uint8_t *)M_OLED_DATA_ADDR;
 
+	// TODO: Write oled_char_to_print to OLED data bus
 	for (uint8_t i = 0; i < 5; i++)
 	{
-		ext_oled[i] = font5[(uint8_t)char_to_print][i];
+		EXT_OLED->DATA = font5[(uint8_t)char_to_print][i];
 	}
-	
+
 	return 0;
 }
 
@@ -91,11 +90,9 @@ void oled_print(char *string)
 
 bool oled_init(void)
 {
-	volatile uint8_t *ext_oled = (uint8_t *)M_OLED_CMD_ADDR;
-
-	for (uint8_t i = 0; i < NUMELTS(oled_init_routine); i++)
+	for (uint8_t i = 0; i < NUMELTS(m_oled_init_routine); i++)
 	{
-		ext_oled[0] = oled_init_routine[i];			
+		EXT_OLED->CMD = m_oled_init_routine[i];
 	}
 
 	ext_oled = (uint8_t *)M_OLED_DATA_ADDR;
@@ -115,6 +112,17 @@ void oled_reset(void)
 void oled_home(void)
 {
 	// TODO
+	/*
+	//Set the cursor to the start of the screen
+	*OLED_cmd = 0x21;
+	*OLED_cmd = 0x00;
+	*OLED_cmd = 0x7f;
+
+	*OLED_cmd = 0x22;
+	*OLED_cmd = 0x00;
+	*OLED_cmd = 0x7;
+	*/
+
 }
 
 void oled_goto_line(uint8_t line)
