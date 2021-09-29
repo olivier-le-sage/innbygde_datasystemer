@@ -2,6 +2,7 @@
  * CAN bus communication interface.
  */
 
+#include <assert.h>
 #include "CAN.h"
 #include "mcp2515.h"
 #include "spi.h"
