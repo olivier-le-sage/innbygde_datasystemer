@@ -166,7 +166,7 @@ A[5:0] from 0 to 14 are invalid entry.
     _OLEDC(0xA8)
 
 #define OLEDC_SET_MUX_RATIO_1(ratio) \
-    _OLEDC((ratio) && 0x3F)
+    _OLEDC((ratio) & 0x3F)
 
 /*
 External or internal
