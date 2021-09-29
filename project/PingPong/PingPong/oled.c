@@ -3,43 +3,13 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "ext_peripherals.h"
 #include "oled.h"
 #include "oled_types.h"
 #include "fonts.h"
 #include "ping_pong.h"
 
-#define M_OLED_CMD_ADDR  ((char*)0x1000)
-#define M_OLED_DATA_ADDR ((char*)0x1200)
-
-/*
-static char oled_init_routine[] =
-{
-	0xAE,
-	0xA1,
-	0xDA,
-	0x12,
-	0xC8,
-	0xA8,
-	0x3F, 
-	0xD5,
-	0x80,
-	0x81,
-	0x50,
-	0xD9,
-	0x21,
-	0x20,
-	0x02,
-	0xDB,
-	0x30,
-	0xAD,
-	0x00,
-	0xA4,
-	0xA6,
-	0xAF
-};
-*/
-
-static char oled_init_routine[] =
+static const uint8_t m_oled_init_routine[] =
 {
 	OLEDC_SET_DISPLAY_ON_OFF(0x0), // Turn display off
 	OLEDC_SET_SEGMENT_REMAP(0x1), // Map column addr 127 to SEG0
@@ -70,11 +40,9 @@ static int m_oled_printchar(char char_to_print, FILE *stream)
 	assert((uint8_t)char_to_print <= NUM_LETTERS_IN_FONT);
 	
 	// TODO: Write oled_char_to_print to OLED data bus
-	volatile uint8_t *ext_oled = (uint8_t *)M_OLED_DATA_ADDR;
-
 	for (uint8_t i = 0; i < 5; i++)
 	{
-		ext_oled[i] = font5[(uint8_t)char_to_print][i];
+		EXT_OLED->DATA = font5[(uint8_t)char_to_print][i];
 	}
 	
 	return 0;
@@ -91,11 +59,9 @@ void oled_print(char *string)
 
 bool oled_init(void)
 {
-	volatile uint8_t *ext_oled = (uint8_t *)M_OLED_CMD_ADDR;
-
-	for (uint8_t i = 0; i < NUMELTS(oled_init_routine); i++)
+	for (uint8_t i = 0; i < NUMELTS(m_oled_init_routine); i++)
 	{
-		ext_oled[0] = oled_init_routine[i];			
+		EXT_OLED->CMD = m_oled_init_routine[i];			
 	}
 	return true;
 }
@@ -108,6 +74,17 @@ void oled_reset(void)
 void oled_home(void)
 {
 	// TODO
+	/*
+	//Set the cursor to the start of the screen
+	*OLED_cmd = 0x21;
+	*OLED_cmd = 0x00;
+	*OLED_cmd = 0x7f;
+	
+	*OLED_cmd = 0x22;
+	*OLED_cmd = 0x00;
+	*OLED_cmd = 0x7;
+	*/
+
 }
 
 void oled_goto_line(uint8_t line)

@@ -10,6 +10,7 @@
 #include "controls.h"
 #include <stdbool.h>
 #include <util/delay.h>
+#include "ext_peripherals.h"
 
 #define M_ADC_ADDRESS     (0x1400)
 #define M_MCU_RC_OSC_FREQ (8000000)
@@ -40,10 +41,8 @@
 
 static void m_run_sampling(uint8_t *p_channel_data_buffer)
 {
-	volatile uint8_t *ext_adc = (uint8_t *)M_ADC_ADDRESS;
-
 	// toggle WR by writing to the ADC's address space
-	ext_adc[0] = 0;
+	*EXT_ADC = 0;
 
 	// Waste some time to allow conversion to finish
 	// NB: conversion time is tconv = (9 x N x 2)/fclk
@@ -53,7 +52,7 @@ static void m_run_sampling(uint8_t *p_channel_data_buffer)
 	{
 		// The data can be read directly from the ADC address space
 		// The first RAM location read out is CH0, then CH1, and so on
-		p_channel_data_buffer[i] = ext_adc[0];
+		p_channel_data_buffer[i] = *EXT_ADC;
 	}
 }
 
