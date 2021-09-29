@@ -9,8 +9,6 @@
 #include "fonts.h"
 #include "ping_pong.h"
 
-#define M_OLED_CMD_ADDR  ((char*)0x1000)
-#define M_OLED_DATA_ADDR ((char*)0x1200)
 
 /*
 static char oled_init_routine[] =
@@ -40,7 +38,7 @@ static char oled_init_routine[] =
 };
 */
 
-static char oled_init_routine[] =
+static char m_oled_init_routine[] =
 {
 	OLEDC_SET_DISPLAY_ON_OFF(0x0), // Turn display off
 	OLEDC_SET_SEGMENT_REMAP(0x1), // Map column addr 127 to SEG0
@@ -95,11 +93,21 @@ bool oled_init(void)
 		EXT_OLED->CMD = m_oled_init_routine[i];
 	}
 
-	ext_oled = (uint8_t *)M_OLED_DATA_ADDR;
-	for (uint16_t i = 0; i < 256; i++)
+	//ext_oled_cmd[0] = OLEDC_ENTIRE_DISPLAY_ON(0x1);
+
+	for (uint16_t i = 0; i < 8; i++)
 	{
-		ext_oled[0] = 0xff;
+		EXT_OLED->CMD = 0x22;
+		EXT_OLED->CMD = 0xb0 | i; // 1st page
+		EXT_OLED->CMD = 0x00;
+		EXT_OLED->CMD = 0x10; // select leftmost column as start column within the page
+
+		for (uint16_t j = 0; j < 128; j++)
+		{
+			EXT_OLED->DATA = 0x55;
+		}
 	}
+
 
 	return true;
 }
@@ -111,18 +119,14 @@ void oled_reset(void)
 
 void oled_home(void)
 {
-	// TODO
-	/*
 	//Set the cursor to the start of the screen
-	*OLED_cmd = 0x21;
-	*OLED_cmd = 0x00;
-	*OLED_cmd = 0x7f;
+	EXT_OLED->CMD = 0x21;
+	EXT_OLED->CMD = 0x00;
+	EXT_OLED->CMD = 0x7f;
 
-	*OLED_cmd = 0x22;
-	*OLED_cmd = 0x00;
-	*OLED_cmd = 0x7;
-	*/
-
+	EXT_OLED->CMD = 0x22;
+  EXT_OLED->CMD = 0x00;
+	EXT_OLED->CMD = 0x7;
 }
 
 void oled_goto_line(uint8_t line)

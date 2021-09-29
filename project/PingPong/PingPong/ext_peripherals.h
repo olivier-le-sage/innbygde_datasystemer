@@ -25,8 +25,8 @@ typedef struct __attribute__((packed,aligned(1))) {
   uint8_t _unused_data[EXT_OLED_DATA_MEM_SIZE - sizeof(uint8_t)];
 } ext_oled_t;
 
-volatile ext_oled_t *const EXT_OLED = (volatile ext_oled_t *)EXT_OLED_MEM_START;
-volatile uint8_t *const EXT_ADC = (volatile uint8_t *)EXT_ADC_MEM_START;
-volatile uint8_t *const EXT_SRAM = (volatile uint8_t *)EXT_SRAM_MEM_START;
+static volatile ext_oled_t *const EXT_OLED = (volatile ext_oled_t *)EXT_OLED_MEM_START;
+static volatile uint8_t *const EXT_ADC = (volatile uint8_t *)EXT_ADC_MEM_START;
+static volatile uint8_t *const EXT_SRAM = (volatile uint8_t *)EXT_SRAM_MEM_START;
 
 #endif /* EXT_PERIPHERALS_H__ */
