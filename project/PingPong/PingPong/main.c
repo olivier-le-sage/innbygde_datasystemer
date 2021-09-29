@@ -9,6 +9,7 @@
 #include "sram_test.h"
 #include "controls.h"
 #include "ui.h"
+#include "CAN.h"
 
 // initialize external memory mapping
 // Sets the SRAM enable bit in the MCU control register

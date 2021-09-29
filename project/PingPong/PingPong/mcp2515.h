@@ -13,6 +13,8 @@ Copyright 2003 Kimberly Otten Software Consulting
 #ifndef __MCP2515_H
 #define __MCP2515_H
 
+#include <stdint.h>
+
 // Define MCP2515 register addresses
 
 #define MCP_RXF0SIDH	0x00
@@ -75,6 +77,7 @@ Copyright 2003 Kimberly Otten Software Consulting
 #define MCP_TX_MASK		0x54
 
 // Define SPI Instruction Set
+#define _MCP_CMD(cmd) ((uint8_t) ((cmd) & 0xFF))
 
 #define MCP_WRITE		0x02
 
@@ -86,13 +89,33 @@ Copyright 2003 Kimberly Otten Software Consulting
 #define MCP_LOAD_TX1	0x42
 #define MCP_LOAD_TX2	0x44
 
-#define MCP_RTS_TX0		0x81
-#define MCP_RTS_TX1		0x82
-#define MCP_RTS_TX2		0x84
-#define MCP_RTS_ALL		0x87
+#define MCP_LOAD_TX(buf) \
+    _MCP_CMD(0x40 | ((buf) & 0x07))
 
-#define MCP_READ_RX0	0x90
-#define MCP_READ_RX1	0x94
+#define MCP_RTS(bufs) \
+    _MCP_CMD(0x80 | ((bufs) & 0x07))
+
+#define MCP_READ_RX(buf) \
+    _MCP_CMD(0x90 | (((buf) << 1) & 0x06))
+
+typedef enum
+{
+    MCP_TX_BUF_0_TXB0SIDH = 0b000,
+    MCP_TX_BUF_0_TXB0D0 = 0b001,
+    MCP_TX_BUF_1_TXB1SIDH = 0b010,
+    MCP_TX_BUF_1_TXB1D0 = 0b011,
+    MCP_TX_BUF_2_TXB2SIDH = 0b100,
+    MCP_TX_BUF_2_TXB2D0 = 0b101
+} mcp_load_tx_buf_t;
+
+typedef enum
+{
+    MCP_RX_BUF_0_RXB0SIDH = 0b00,
+    MCP_RX_BUF_0_RXB0D0 = 0b01,
+    MCP_RX_BUF_1_RXB1SIDH = 0b10,
+    MCP_RX_BUF_1_RXB1D0 = 0b11
+} mcp_read_rx_buf_t;
+
 
 #define MCP_READ_STATUS	0xA0
 
@@ -155,5 +178,15 @@ Copyright 2003 Kimberly Otten Software Consulting
 #define MCP_MERRF		0x80
 
 
+void mcp2515_init(void);
+void mcp2515_reset(void);
+void mcp2515_read(uint8_t addr, uint8_t * data, uint8_t len);
+uint8_t mcp2515_read_rx_buffer(mcp_read_rx_buf_t buf, uint8_t * data, uint8_t len);
+void mcp2515_write(uint8_t addr, uint8_t * data, uint8_t len);
+void mcp2515_load_tx_buffer(mcp_load_tx_buf_t buf, uint8_t * data, uint8_t len);
+void mcp2515_request_to_send(uint8_t buf_mask);
+uint8_t mcp2515_read_status(void);
+uint8_t mcp2515_rx_status(void);
+void mcp2515_bit_modify(uint8_t addr, uint8_t mask, uint8_t data);
 
 #endif

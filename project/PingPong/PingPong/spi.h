@@ -1,27 +1,18 @@
 /*
  * Generic SPI routines
  */
+#ifndef SPI_H__
+#define SPI_H__
 
 #include <stdint.h>
-#include <avr/io.h>
+#include <stdbool.h>
 
-void spi_master_init(void)
-{
-	/* Set MOSI and SCK output, all others input */
-	DDRB = (1<<DDB5)|(1<<DDB7);
-	/* Enable SPI, configure as master, set clock rate fck/16 */
-	SPCR = (1<<SPE)|(1<<MSTR)|(1<<SPR0);
-}
+void spi_master_init(void);
 
-void spi_master_send(uint8_t byte)
-{
-	/* Start transmission */
-	SPDR = byte;
-	/* Wait for transmission complete */
-	while(!(SPSR & (1<<SPIF)));
-}
+void spi_master_enable(void);
+void spi_master_disable(void);
 
-uint8_t spi_master_read(void)
-{
-	return SPDR;
-}
+void spi_master_send(uint8_t data);
+uint8_t spi_master_read(void);
+
+#endif /* SPI_H__ */

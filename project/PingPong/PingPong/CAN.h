@@ -8,9 +8,9 @@ typedef struct
 {
 	uint8_t id;
 	uint8_t data_len;
-	uint8_t *data;
+	const uint8_t *data;
 } can_bus_msg_t;
 
 void can_bus_init(void);
-void can_bus_send(can_bus_msg_t message);
+void can_bus_send(const can_bus_msg_t * message);
 can_bus_msg_t can_bus_receive(void);
