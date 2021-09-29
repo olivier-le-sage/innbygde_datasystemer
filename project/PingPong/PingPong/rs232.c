@@ -25,8 +25,6 @@ static FILE uart_stream = FDEV_SETUP_STREAM(m_uart_printchar, m_uart_getchar, _F
 
 static int m_uart_printchar(char char_to_print, FILE *stream)
 {
-	stdout = &uart_stream;
-
     if (char_to_print == '\n')
     {
         return m_uart_printchar('\r', stream);
@@ -42,8 +40,6 @@ static int m_uart_printchar(char char_to_print, FILE *stream)
 
 static int m_uart_getchar(FILE *stream)
 {
-	stdin = &uart_stream;
-
     if (ferror(&uart_stream))
 	{
 		return _FDEV_ERR;
@@ -65,6 +61,18 @@ char uart_fetch_by_force(void)
 	
 	// Fetch character from UDR
 	return UDR0;
+}
+
+void uart_config_streams(void)
+{
+	stdout = &uart_stream;
+	stdin = &uart_stream;
+}
+
+void uart_print(char *string)
+{
+	uart_config_streams();
+	printf("%s", string);
 }
 
 bool uart_init(void)

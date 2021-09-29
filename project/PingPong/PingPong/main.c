@@ -22,6 +22,9 @@ int main(void)
 	assert(joystick_init());
 	assert(ui_init());
 
+	// direct printf to the uart
+	uart_config_streams();
+
 	// Navigate user interface
 	ui_cmd_t ui_cmd;
 	joystick_direction_t x_dir;
@@ -36,7 +39,7 @@ int main(void)
 		get_sliders_pos(&sliders);
 		printf("left slider=%d%%, right slider=%d%%\n", (sliders.left_slider_pos*100)/0xFF, (sliders.right_slider_pos*100)/0xFF);
 		printf("\n");
-		
+
 		ui_cmd = UI_DO_NOTHING;
 
 		if (x_dir == NEUTRAL && y_dir == UP)
