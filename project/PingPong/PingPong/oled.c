@@ -14,7 +14,7 @@
 /*
 static char oled_init_routine[] =
 {
-	0xA3,
+	0xAE,
 	0xA1,
 	0xDA,
 	0x12,
@@ -57,7 +57,7 @@ static char oled_init_routine[] =
 	OLEDC_SET_MEM_ADDR_MODE_0, // Set page addressing mode 
 	OLEDC_SET_MEM_ADDR_MODE_1(0x2), // 0x02,
 	OLEDC_SET_VCOMH_DESELECT_LVL_0, // Set VCOMH deselect level 0.83 * Vcc
-	OLEDC_SET_VCOMH_DESELECT_LVL_1(0x2), // 0x30,
+	OLEDC_SET_VCOMH_DESELECT_LVL_1(0x3), // 0x30,
 	OLEDC_IREF_SELECTION_0, // 0xAD,
 	OLEDC_IREF_SELECTION_1(0x0),
 	OLEDC_ENTIRE_DISPLAY_ON(0x0), // 0xA4,
