@@ -172,7 +172,7 @@ void oled_goto_column(uint8_t column)
     EXT_OLED->CMD = 0x00 | (column & 0x0F);
 
     // upper 4 bits
-    EXT_OLED->CMD = 0x10 | ((column & 0xF0) >> 4);
+    EXT_OLED->CMD = 0x10 | (column >> 4);
 
 	m_current_col = column;
 }
