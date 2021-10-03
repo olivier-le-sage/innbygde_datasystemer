@@ -73,7 +73,6 @@ static int m_oled_printchar(char char_to_print, FILE *stream)
 
 	const uint8_t font_size = NUMELTS(font4[0]);
 
-    // TODO: Write oled_char_to_print to OLED data bus
     for (uint8_t i = 0; i < font_size; i++)
     {
 		volatile uint8_t char_to_write = pgm_read_word(&font4[(uint8_t)char_to_print-32][i]);
@@ -84,14 +83,44 @@ static int m_oled_printchar(char char_to_print, FILE *stream)
     return 0;
 }
 
-/* Oled output stream */
-static FILE m_oled_stream = FDEV_SETUP_STREAM(m_oled_printchar, NULL, _FDEV_SETUP_WRITE);
-
-void oled_print(const char *string)
+static int m_oled_inv_printchar(char char_to_print, FILE *stream)
 {
-    stdout = &m_oled_stream; // ensure stdout is pointing to the OLED and not RS232
-    printf("%s", string);
+	assert((uint8_t)char_to_print <= NUM_LETTERS_IN_FONT);
+
+	const uint8_t font_size = NUMELTS(font4[0]);
+
+	for (uint8_t i = 0; i < font_size; i++)
+	{
+		volatile uint8_t char_to_write = ~pgm_read_word(&font4[(uint8_t)char_to_print-32][i]);
+		EXT_OLED->DATA = char_to_write;
+		m_current_col = (m_current_col + font_size) % 128;
+	}
+
+	return 0;
 }
+
+/* Oled output streams */
+static FILE m_oled_stream = FDEV_SETUP_STREAM(m_oled_printchar, NULL, _FDEV_SETUP_WRITE);
+static FILE m_oled_inv_stream = FDEV_SETUP_STREAM(m_oled_inv_printchar, NULL, _FDEV_SETUP_WRITE);
+
+void oled_printf(const char *string, bool inv, ...)
+{
+	va_list args;
+	va_start(args, inv);
+
+	if (inv)
+	{
+		vfprintf(&m_oled_inv_stream, string, args);
+	}
+	else
+	{
+		vfprintf(&m_oled_stream, string, args);
+	}
+
+	va_end(args);
+}
+
+
 
 bool oled_init(void)
 {
@@ -112,7 +141,12 @@ bool oled_init(void)
 
 void oled_reset(void)
 {
-    (void)oled_init();
+    for (uint8_t line = 0; line < 8; line++)
+    {
+        oled_clear_line(line);
+    }
+
+    oled_home();
 }
 
 void oled_home(void)

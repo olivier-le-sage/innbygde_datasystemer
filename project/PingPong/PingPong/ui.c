@@ -37,13 +37,12 @@ static ui_submenu_t *mp_current_menu;
 
 void m_update_display(void)
 {
-	/* Print out current menu to OLED display */
-	oled_home();
+	oled_reset();
 
-	for (uint8_t i = 0; i < mp_current_menu->num_submenu_options; i++)
+	/* Print out current menu to OLED display -- always assume it has changed for now */
+	for (uint8_t i = 0; i < 8; i++)
 	{
-		oled_clear_line(i);
-		oled_print(mp_current_menu->submenu_options[i]);
+		oled_printf("%s", (i == m_current_selection), mp_current_menu->submenu_options[i]);
 	}
 }
 
