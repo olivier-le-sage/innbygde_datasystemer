@@ -42,7 +42,6 @@ void m_update_display(void)
 
 	for (uint8_t i = 0; i < mp_current_menu->num_submenu_options; i++)
 	{
-		oled_goto_line(i);
 		oled_clear_line(i);
 		oled_print(mp_current_menu->submenu_options[i]);
 	}
@@ -55,7 +54,7 @@ bool ui_init(void)
 	assert(NUMELTS(m_main_menu.submenu_options) <= m_main_menu.num_submenu_options);
 	assert(m_main_menu.num_submenu_options <= MAX_SUBMENU_OPTIONS);
 
-	m_current_selection = 0;	
+	m_current_selection = 0;
 	mp_current_menu = &m_main_menu;
 
 	return true;
