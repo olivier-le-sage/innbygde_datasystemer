@@ -40,8 +40,9 @@ void m_update_display(void)
 	oled_reset();
 
 	/* Print out current menu to OLED display -- always assume it has changed for now */
-	for (uint8_t i = 0; i < 8; i++)
+	for (uint8_t i = 0; i < mp_current_menu->num_submenu_options; i++)
 	{
+		oled_goto_line(i);
 		oled_printf("%s", (i == m_current_selection), mp_current_menu->submenu_options[i]);
 	}
 }
