@@ -89,7 +89,7 @@ static int m_oled_printchar(char char_to_print, FILE *stream)
 /* Oled output stream */
 static FILE m_oled_stream = FDEV_SETUP_STREAM(m_oled_printchar, NULL, _FDEV_SETUP_WRITE);
 
-void oled_print(char *string)
+void oled_print(const char *string)
 {
     stdout = &m_oled_stream; // ensure stdout is pointing to the OLED and not RS232
     printf("%s", string);
