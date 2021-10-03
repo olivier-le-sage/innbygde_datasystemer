@@ -20,7 +20,7 @@ typedef struct ui_submenu_t ui_submenu_t;
 struct ui_submenu_t
 {
 	uint8_t num_submenu_options;
-	char submenu_options[MAX_SUBMENU_OPTIONS][MAX_MENU_LINE_SIZE];
+	const char * submenu_options[MAX_SUBMENU_OPTIONS];
 	ui_submenu_t* next[MAX_SUBMENU_OPTIONS];
 };
 
