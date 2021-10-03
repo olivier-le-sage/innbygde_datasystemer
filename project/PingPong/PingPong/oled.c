@@ -73,6 +73,8 @@ static int m_oled_printchar(char char_to_print, FILE *stream)
 
 	const uint8_t font_size = NUMELTS(font4[0]);
 
+    oled_goto_column(m_current_col);
+
     // TODO: Write oled_char_to_print to OLED data bus
     for (uint8_t i = 0; i < font_size; i++)
     {
@@ -137,9 +139,9 @@ void oled_goto_column(uint8_t column)
     EXT_OLED->CMD = 0x00 | (column & 0x0F);
 
     // upper 4 bits
-    EXT_OLED->CMD = 0x10 | (column & 0xF0);
+    EXT_OLED->CMD = 0x10 | ((column & 0xF0) >> 4);
 
-	  m_current_col = column;
+	m_current_col = column;
 }
 
 void oled_clear_line(uint8_t line)
