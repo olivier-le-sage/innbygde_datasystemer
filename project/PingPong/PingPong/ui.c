@@ -43,7 +43,7 @@ void m_update_display(void)
 	for (uint8_t i = 0; i < mp_current_menu->num_submenu_options; i++)
 	{
 		oled_goto_line(i);
-		oled_printf("%s", (i == m_current_selection), mp_current_menu->submenu_options[i]);
+		oled_printf(mp_current_menu->submenu_options[i], (i == m_current_selection));
 	}
 }
 
