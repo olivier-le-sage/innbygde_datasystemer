@@ -25,22 +25,19 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 	if (data)
 	{
 		char data_str[8 * 2 + 7 + 1] = {0}; // max data bits * 2 + spaces + null byte
-		for (uint8_t i = 0; i < data->len; i++)
-		{
-			char *data_str_start = &data_str[2 * i + i];
-			snprintf(data_str_start, 3, "%02X", data->data[i]);
-			data_str_start[2] = ' ';
-		}
 		if (data->len > 0)
-		{
+		{	
+			for (uint8_t i = 0; i < data->len; i++)
+			{
+				char *data_str_start = &data_str[2 * i + i];
+				snprintf(data_str_start, 3, "%02X", data->data[i]);
+				data_str_start[2] = ' ';
+			}
 			data_str[3 * data->len - 1] = '\0';	
 		}
-		else
-		{
-			data_str[0] = '\0';
-		}
+		// For some reason printing the whole thing in one does not work
+		// (maybe printf buffer size or something)
 		printf("[D] {ext: %u, id: %d, len: %u, data: [", id->extended, id->value, data->len);
-		// For some reason printing the whole thing does not work (maybe printf buffer size or something)
 		printf("%s", &data_str[0]);
 		printf("] }\n");
 	}
