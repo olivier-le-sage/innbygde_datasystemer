@@ -60,6 +60,8 @@ uint8_t mcp2515_read(uint8_t addr)
 
     spi_master_send(MCP_READ);
     spi_master_send(addr);
+
+    spi_master_send(0x0);
     data = spi_master_read();
 
     spi_master_disable();
@@ -76,9 +78,8 @@ void mcp2515_read_multiple(uint8_t addr, uint8_t * data, uint8_t len)
 
     spi_master_send(MCP_READ);
     spi_master_send(addr);
-    data[0] = spi_master_read();
 
-    for (uint8_t i = 1; i < len; i++)
+    for (uint8_t i = 1; 0 < len; i++)
     {
         spi_master_send(0x00);  // Send dummy data to drive SCK
         data[i] = spi_master_read();
@@ -95,9 +96,8 @@ uint8_t mcp2515_read_rx_buffer(mcp_read_rx_buf_t buf, uint8_t * data, uint8_t le
     spi_master_enable();
 
     spi_master_send(MCP_READ_RX(buf));
-    data[0] = spi_master_read();
 
-    for (uint8_t i = 1; i < len; i++)
+    for (uint8_t i = 0; i < len; i++)
     {
         spi_master_send(0x00);
         data[i] = spi_master_read();
@@ -168,6 +168,8 @@ uint8_t mcp2515_read_status(void)
     spi_master_enable();
 
     spi_master_send(MCP_READ_STATUS);
+
+    spi_master_send(0x00);
     status = spi_master_read();
 
     spi_master_disable();
@@ -182,6 +184,8 @@ uint8_t mcp2515_rx_status(void)
     spi_master_enable();
 
     spi_master_send(MCP_RX_STATUS);
+
+    spi_master_send(0x00);
     status = spi_master_read();
 
     spi_master_disable();
