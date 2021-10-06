@@ -22,7 +22,13 @@ bool mcp2515_init(const mcp2515_init_t * init_params)
 
     m_evt_handler = init_params->evt_handler;
 
-    spi_master_init();
+    spi_init_t spi_init = {
+        .data_order = SPI_DATA_ORDER_MSB_FIRST,
+        .clock_polarity = SPI_CLOCK_POLARITY_RISE_FALL,
+        .clock_phase = SPI_CLOCK_PHASE_SAMPLE_SETUP,
+        .double_speed = false
+    };
+    spi_master_init(&spi_init);
 
     // Configure low level on INT1 to generate an interrupt
     MCUCR &= ~(_BV(ISC10) | _BV(ISC11));
