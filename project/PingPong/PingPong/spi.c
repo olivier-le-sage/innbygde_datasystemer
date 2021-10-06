@@ -27,11 +27,11 @@ static inline void m_slave_select_clr(void)
 
 void spi_master_init(void)
 {
-    /* Set MOSI, SCK and SS output, all others input */
+    // Set MOSI, SCK and SS output, all others input
     DDRB = _BV(DDB4) | _BV(DDB5) | _BV(DDB7);
-    /* Enable SPI, configure as master, set clock rate fck/16 */
+    // Enable SPI, configure as master, set clock rate fck/16
     SPCR = _BV(SPE) | _BV(MSTR) | _BV(SPR0);
-    /* Set ~SS high initially */
+    // Set ~SS high initially
     m_slave_select_set();
 }
 
@@ -47,9 +47,9 @@ void spi_master_disable(void)
 
 void spi_master_send(uint8_t data)
 {
-    /* Start transmission */
+    // Start transmission
     SPDR = data;
-    /* Wait for transmission complete */
+    // Wait for transmission complete
     while (!(SPSR & (1 << SPIF)))
     {
     }

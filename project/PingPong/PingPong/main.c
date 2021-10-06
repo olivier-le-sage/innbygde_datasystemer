@@ -16,6 +16,24 @@
 // and masks the top 4 bits of the addressing (reserved for JTAG)
 #define ENABLE_SRAM() {MCUCR |= _BV(SRE); SFIOR |= _BV(XMM2);}
 
+// Handle received CAN messages
+static void m_handle_can_rx(const can_msg_rx_t *msg)
+{
+	if (msg->type == CAN_MSG_TYPE_REMOTE)
+	{
+
+	}
+	else
+	{
+		printf("");
+	}
+}
+
+static void m_handle_can_tx(int8_t handle)
+{
+
+}
+
 int main(void)
 {
 	ENABLE_SRAM();

@@ -166,6 +166,9 @@
     <Compile Include="oled_types.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="mcp2515.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="mcp2515.h">
       <SubType>compile</SubType>
     </Compile>
@@ -176,6 +179,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="rs232.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="spi.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="spi.h">
