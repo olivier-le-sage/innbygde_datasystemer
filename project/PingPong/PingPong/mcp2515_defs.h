@@ -217,7 +217,7 @@ typedef enum
 
 /* Encode register value for TXBnSIDL */
 #define MCP_TXBnSIDL_ENCODE(id, extended) \
-    _FORCE_UINT8((((id) << 5) & 0xE0) | (((extended) << 3) & 0x80) | (((id) >> 16) & 0x03))
+    _FORCE_UINT8((((id) << 5) & 0xE0) | (((extended) << 3) & 0x08) | (((id) >> 16) & 0x03))
 
 /* Encode register value for TXBnEID8 */
 #define MCP_TXBnEID8_ENCODE(id) \
