@@ -17,18 +17,18 @@ static ui_submenu_t m_final_menu = {
 
 static ui_submenu_t m_next_menu = {
 	.num_submenu_options = 2,
-	.submenu_options[0]  = "(1) Welcome to the submenu",
-	.submenu_options[1]  = "(2) Exit",
+	.submenu_options[0]  = "(1) WELCOME TO THE SUBMENU",
+	.submenu_options[1]  = "(2) EXIT",
 	.next[1]             = &m_final_menu,
 };
 
 static ui_submenu_t m_main_menu = {
 	.num_submenu_options = 5,
-	.submenu_options[0]  = "(1) Play game",
-	.submenu_options[1]  = "(2) Run animation",
-	.submenu_options[2]  = "(3) Play with fire",
-	.submenu_options[3]  = "(4) Launch the nukes",
-	.submenu_options[4]  = "(5) Exit",
+	.submenu_options[0]  = "(1) PLAY GAME",
+	.submenu_options[1]  = "(2) RUN ANIMATION",
+	.submenu_options[2]  = "(3) PLAY WITH FIRE",
+	.submenu_options[3]  = "(4) LAUNCH THE NUKES",
+	.submenu_options[4]  = "(5) EXIT",
 	.next[3]             = &m_next_menu,
 };
 
