@@ -33,7 +33,7 @@ bool mcp2515_init(const mcp2515_init_t * init_params)
     // Configure low level on INT1 to generate an interrupt
     MCUCR &= ~(_BV(ISC10) | _BV(ISC11));
     // Enable external interrupt on INT1
-    GICR |= INT1;
+    GICR |= _BV(INT1);
 
     // Enable interrupt generation on the MCP2515
     mcp2515_write(MCP_CANINTE,
