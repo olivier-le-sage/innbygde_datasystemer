@@ -29,6 +29,11 @@ bool mcp2515_init(const mcp2515_init_t * init_params)
     // Enable external interrupt on INT1
     GICR |= INT1;
 
+    // Enable interrupt generation on the MCP2515
+    mcp2515_write(MCP_CANINTE,
+                  MCP_CANINTE_RX0IE | MCP_CANINTE_RX1IE |
+                  MCP_CANINTE_TX0IE | MCP_CANINTE_TX1IE | MCP_CANINTE_TX2IE);
+
     return true; 
 }
 
