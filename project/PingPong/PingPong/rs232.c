@@ -63,6 +63,18 @@ char uart_fetch_by_force(void)
 	return UDR0;
 }
 
+void uart_config_streams(void)
+{
+	stdout = &uart_stream;
+	stdin = &uart_stream;
+}
+
+void uart_print(char *string)
+{
+	uart_config_streams();
+	printf("%s", string);
+}
+
 bool uart_init(void)
 {
 	/* Set baud rate */
@@ -71,8 +83,5 @@ bool uart_init(void)
 	
 	/* Enable transmitter and receiver */
 	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-
-    stdout = &uart_stream;
-	stdin = &uart_stream;
     return true;
 }

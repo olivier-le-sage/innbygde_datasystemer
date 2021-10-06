@@ -10,6 +10,7 @@
 #include "controls.h"
 #include <stdbool.h>
 #include <util/delay.h>
+#include "ext_peripherals.h"
 
 #define M_ADC_ADDRESS     (0x1400)
 #define M_MCU_RC_OSC_FREQ (8000000)
@@ -32,7 +33,7 @@
 // TODO: replace this temp value with one which is fine-tuned for a good user experience
 #define M_JOYSTICK_X_AXIS_NEUTRAL  (0xA0)
 #define M_JOYSTICK_Y_AXIS_NEUTRAL  (0x9E)
-#define M_JOYSTICK_DIR_THRESHOLD   (0x40) // relative percentage to neutral required to exit the "dead zone"
+#define M_JOYSTICK_DIR_THRESHOLD   (0x40) // relative difference to neutral required to exit the "dead zone"
 #define M_JOYSTICK_LEFT_THRESHOLD  (M_JOYSTICK_X_AXIS_NEUTRAL - M_JOYSTICK_DIR_THRESHOLD)
 #define M_JOYSTICK_RIGHT_THRESHOLD (M_JOYSTICK_X_AXIS_NEUTRAL + M_JOYSTICK_DIR_THRESHOLD)
 #define M_JOYSTICK_DOWN_THRESHOLD  (M_JOYSTICK_Y_AXIS_NEUTRAL - M_JOYSTICK_DIR_THRESHOLD)
@@ -40,10 +41,8 @@
 
 static void m_run_sampling(uint8_t *p_channel_data_buffer)
 {
-	volatile uint8_t *ext_adc = (uint8_t *)M_ADC_ADDRESS;
-
 	// toggle WR by writing to the ADC's address space
-	ext_adc[0] = 0;
+	*EXT_ADC = 0;
 
 	// Waste some time to allow conversion to finish
 	// NB: conversion time is tconv = (9 x N x 2)/fclk
@@ -53,7 +52,7 @@ static void m_run_sampling(uint8_t *p_channel_data_buffer)
 	{
 		// The data can be read directly from the ADC address space
 		// The first RAM location read out is CH0, then CH1, and so on
-		p_channel_data_buffer[i] = ext_adc[0];
+		p_channel_data_buffer[i] = *EXT_ADC;
 	}
 }
 
@@ -131,6 +130,31 @@ void get_joystick_dir(joystick_direction_t *p_first_dir_out, joystick_direction_
 	else
 	{
 		*p_second_dir_out = NEUTRAL;
+	}
+}
+
+const char * joystick_dir_to_str(joystick_direction_t joystick_dir)
+{
+	switch(joystick_dir)
+	{
+		case NEUTRAL:
+			return "NEUTRAL";
+			break;
+		case LEFT:
+			return "LEFT";
+			break;
+		case RIGHT:
+			return "RIGHT";
+			break;
+		case UP:
+			return "UP";
+			break;
+		case DOWN:
+			return "DOWN";
+			break;
+		default:
+			return "";
+			break;
 	}
 }
 
