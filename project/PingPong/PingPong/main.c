@@ -44,11 +44,15 @@ int main(void)
 
 		if (x_dir == NEUTRAL && y_dir == UP)
 		{
-			ui_cmd = UI_SELECT_UP;
+			ui_cmd = UI_SELECT_DOWN;
 		}
 		else if (x_dir == NEUTRAL && y_dir == DOWN)
 		{
-			ui_cmd = UI_SELECT_DOWN;
+			ui_cmd = UI_SELECT_UP;
+		}
+		else if (x_dir == RIGHT && y_dir == NEUTRAL)
+		{
+			ui_cmd = UI_ENTER_SUBMENU;
 		}
 
 		ui_issue_cmd(ui_cmd);

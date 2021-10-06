@@ -62,7 +62,7 @@ bool ui_init(void)
 
 void m_ui_go_up(void)
 {
-	if (m_current_selection < mp_current_menu->num_submenu_options)
+	if (m_current_selection < (mp_current_menu->num_submenu_options - 1))
 	{
 		m_current_selection++;
 	}
@@ -70,7 +70,7 @@ void m_ui_go_up(void)
 
 void m_ui_go_down(void)
 {
-	if (m_current_selection > mp_current_menu->num_submenu_options)
+	if (m_current_selection != 0)
 	{
 		m_current_selection--;
 	}
@@ -86,6 +86,9 @@ void m_ui_enter(void)
 		{
 			mp_current_menu = p_next_submenu;
 		}
+		
+		/* Reset "cursor" to the top of the menu options */
+		m_current_selection = 0;
 	}
 }
 
