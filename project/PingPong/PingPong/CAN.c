@@ -25,6 +25,7 @@ static can_tx_handler_t m_tx_handler;
 static volatile uint8_t m_tx_buf_avail;
 
 
+/* Allocate and take one of the available TX buffers */
 static int8_t m_tx_buf_alloc(void)
 {
     uint8_t tx_buf_avail = m_tx_buf_avail;
@@ -43,14 +44,15 @@ static int8_t m_tx_buf_alloc(void)
     return -1;
 }
 
+/* Mark a TX buffer as available.
+ * Note: no mutual exclusion, so should be called from interrupt handler.
+ */
 static inline void m_tx_buf_free(uint8_t buf)
 {
     /* Turn off interrupts and set the availaility bit. cli()/sei() may not be
      * necessary here.
      */
-    cli();
     m_tx_buf_avail |= _BV(buf);
-    sei();
 }
 
 /* Set up registers in TX buffer for transmission.
@@ -85,6 +87,7 @@ static void m_tx_prepare(uint8_t buf_no, const can_id_t *id, const can_data_t *d
     mcp2515_load_tx_buffer(load_buf, buf, buf_len);
 }
 
+/* Parse received data in MCP buffer into CAN message */
 static void m_rx_parse(uint8_t buf_no, can_msg_rx_t * msg, uint8_t * data_buf)
 {
     static uint8_t buf[RX_BUFFER_SIZE];
@@ -132,6 +135,7 @@ static void m_rx_parse(uint8_t buf_no, can_msg_rx_t * msg, uint8_t * data_buf)
     }
 }
 
+/* Send a message with the given ID and data */
 static int8_t m_send(const can_id_t *id, const can_data_t *data)
 {
     int8_t tx_buf = m_tx_buf_alloc();
