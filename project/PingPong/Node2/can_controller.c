@@ -151,6 +151,7 @@ uint8_t can_init(const can_init_t * init_params)
     m_tx_handler = init_params->tx_handler;
 
     uint32_t ul_status;
+	(void)ul_status;
 
     //Disable can
     CAN0->CAN_MR &= ~CAN_MR_CANEN;

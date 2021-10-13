@@ -3,7 +3,7 @@
  *
  * Created: 15.09.2021 11:52:41
  *  Author: oliviel
- */ 
+ */
 
 
 #ifndef JOYSTICK_H_

@@ -38,13 +38,13 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 		}
 		// For some reason printing the whole thing in one does not work
 		// (maybe printf buffer size or something)
-		printf("[D] {ext: %u, id: %d, len: %u, data: [", id->extended, id->value, data->len);
+		printf("[D] {ext: %u, id: %d, len: %u, data: [", (uint32_t)id->extended, (int)id->value, (uint32_t)data->len);
 		printf("%s", &data_str[0]);
 		printf("] }\n");
 	}
 	else
 	{
-		printf("[R] {ext: %u, id: %d }\n", id->extended, id->value);
+		printf("[R] {ext: %u, id: %d }\n", (uint32_t)id->extended, (int)id->value);
 	}
 }
 
@@ -93,16 +93,20 @@ int main(void)
 		get_sliders_pos(&sliders);
 		printf("left slider=%d%%, right slider=%d%%\n", (sliders.left_slider_pos*100)/0xFF, (sliders.right_slider_pos*100)/0xFF);
 		printf("\n");
-		
-		// TODO: Send joystick direction as a CAN bus message to Node 2
-		// Use TX buffer 0 for joystick direction
-		
+
 		can_data_t joystick_data;
-		joystick_data.len = 4; // two bytes per direction
+		uint8_t msg_data[2]; // one byte per direction
+		msg_data[0] = (uint8_t)x_dir;
+		msg_data[1] = (uint8_t)y_dir;
+		joystick_data.len = sizeof(msg_data);
+		joystick_data.data = msg_data;
+
 		can_id_t joystick_data_id;
-		joystick_data_id.value = 0; // temp value, replace with some value
+		joystick_data_id.value = 0xF; // temp value, replace with some value
 		joystick_data_id.extended = false;
-	
+		
+		// Use TX buffer 0 to send joystick direction
+		can_data_send(0, &joystick_data_id, &joystick_data);
 
 		ui_cmd = UI_DO_NOTHING;
 
