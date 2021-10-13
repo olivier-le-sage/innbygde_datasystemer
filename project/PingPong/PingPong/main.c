@@ -12,12 +12,16 @@
 #include "CAN.h"
 #include <util/delay.h>
 
+#define M_JOYSTICK_DATA_TXBUF_NO (0)
 
 // initialize external memory mapping
 // Sets the SRAM enable bit in the MCU control register
 // and masks the top 4 bits of the addressing (reserved for JTAG)
 #define ENABLE_SRAM() {MCUCR |= _BV(SRE); SFIOR |= _BV(XMM2);}
 
+static joystick_direction_t m_x_dir;
+static joystick_direction_t m_y_dir;
+static sliders_position_t m_sliders;
 
 static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 {
@@ -48,6 +52,27 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 	}
 }
 
+// Fetch current joystick information and send it as as can message
+static void m_send_joystick_direction_can_msg(void)
+{
+	can_data_t joystick_data;
+	can_id_t joystick_data_id;
+	uint8_t msg_data[2]; // one byte per direction
+	
+	get_joystick_dir(&m_x_dir, &m_y_dir);
+	msg_data[0] = (uint8_t)m_x_dir;
+	msg_data[1] = (uint8_t)m_y_dir;
+	
+	joystick_data.len = sizeof(msg_data);
+	joystick_data.data = msg_data;
+
+	joystick_data_id.value = 0xF; // TODO replace temp ID
+	joystick_data_id.extended = false;
+		
+	// Use TX buffer 0 to send joystick direction
+	can_data_send(M_JOYSTICK_DATA_TXBUF_NO, &joystick_data_id, &joystick_data);
+}
+
 // Handle received CAN messages
 static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
@@ -57,6 +82,10 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
 {
+	if (tx_buf_no == M_JOYSTICK_DATA_TXBUF_NO)
+	{
+		m_send_joystick_direction_can_msg();
+	}
 }
 
 static bool m_init_can()
@@ -76,49 +105,35 @@ int main(void)
 	assert(ui_init());
 	assert(m_init_can());
 
+	m_send_joystick_direction_can_msg();
+
 	// direct printf to the uart
 	uart_config_streams();
 
 	// Navigate user interface
 	ui_cmd_t ui_cmd;
-	joystick_direction_t x_dir;
-	joystick_direction_t y_dir;
+	
 
 	while(1)
 	{
-		get_joystick_dir(&x_dir, &y_dir);
-		printf("Joystick: x-axis dir=%s, y-axis dir=%s\n", joystick_dir_to_str(x_dir), joystick_dir_to_str(y_dir));
-
-		sliders_position_t sliders;
-		get_sliders_pos(&sliders);
-		printf("left slider=%d%%, right slider=%d%%\n", (sliders.left_slider_pos*100)/0xFF, (sliders.right_slider_pos*100)/0xFF);
-		printf("\n");
-
-		can_data_t joystick_data;
-		uint8_t msg_data[2]; // one byte per direction
-		msg_data[0] = (uint8_t)x_dir;
-		msg_data[1] = (uint8_t)y_dir;
-		joystick_data.len = sizeof(msg_data);
-		joystick_data.data = msg_data;
-
-		can_id_t joystick_data_id;
-		joystick_data_id.value = 0xF; // temp value, replace with some value
-		joystick_data_id.extended = false;
+		get_joystick_dir(&m_x_dir, &m_y_dir);
+		//printf("Joystick: x-axis dir=%s, y-axis dir=%s\n", joystick_dir_to_str(m_x_dir), joystick_dir_to_str(m_y_dir));
 		
-		// Use TX buffer 0 to send joystick direction
-		can_data_send(0, &joystick_data_id, &joystick_data);
+		get_sliders_pos(&m_sliders);
+		//printf("left slider=%d%%, right slider=%d%%\n", (m_sliders.left_slider_pos*100)/0xFF, (m_sliders.right_slider_pos*100)/0xFF);
+		//printf("\n");
 
 		ui_cmd = UI_DO_NOTHING;
 
-		if (x_dir == NEUTRAL && y_dir == UP)
+		if (m_x_dir == NEUTRAL && m_y_dir == UP)
 		{
 			ui_cmd = UI_SELECT_DOWN;
 		}
-		else if (x_dir == NEUTRAL && y_dir == DOWN)
+		else if (m_x_dir == NEUTRAL && m_y_dir == DOWN)
 		{
 			ui_cmd = UI_SELECT_UP;
 		}
-		else if (x_dir == RIGHT && y_dir == NEUTRAL)
+		else if (m_x_dir == RIGHT && m_y_dir == NEUTRAL)
 		{
 			ui_cmd = UI_ENTER_SUBMENU;
 		}
