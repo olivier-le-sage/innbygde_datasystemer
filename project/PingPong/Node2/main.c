@@ -49,7 +49,7 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
 {
-	
+	uart_printf("TX complete.");
 }
 
 static void m_can_init(void)
@@ -65,8 +65,8 @@ static void m_can_init(void)
 			.baudrate = 1000000,
 			.sync_jump_len = 1,
 			.prop_seg_len = 1,
-			.phase_1_len = 1,
-			.phase_2_len = 1
+			.phase_1_len = 2,
+			.phase_2_len = 2
 		}
 	};
 

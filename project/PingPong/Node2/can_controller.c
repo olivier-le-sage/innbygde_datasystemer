@@ -194,19 +194,21 @@ uint8_t can_init(const can_init_t * init_params)
     {
         CAN0->CAN_MB[n].CAN_MID = CAN_MID_MIDE;
         CAN0->CAN_MB[n].CAN_MMR = (CAN_MMR_MOT_MB_TX);
+		
+		can_ier |= 1 << n; //Enable interrupt on tx mailboxes
     }
 
     /* Configure receive mailboxes */
     for (int n = m_tx_buf_count;
-         n <= m_rx_buf_count + m_tx_buf_count;
+         n < m_rx_buf_count + m_tx_buf_count;
          n++)  //Simply one mailbox setup for all messages. You might want to apply filter for them.
     {
         CAN0->CAN_MB[n].CAN_MAM = 0; //Accept all messages
         CAN0->CAN_MB[n].CAN_MID = CAN_MID_MIDE;
         CAN0->CAN_MB[n].CAN_MMR = (CAN_MMR_MOT_MB_RX);
         CAN0->CAN_MB[n].CAN_MCR |= CAN_MCR_MTCR;
-
-        can_ier |= 1 << n; //Enable interrupt on rx mailbox
+		
+		can_ier |= 1 << n; //Enable interrupt on rx mailboxes
     }
 
     /****** End of mailbox configuraion ******/

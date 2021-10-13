@@ -88,7 +88,7 @@ static void m_handle_can_tx(uint8_t tx_buf_no)
 	}
 }
 
-static bool m_init_can()
+static uint8_t m_init_can()
 {
 	can_init_t init = {
 		.rx_handler = m_handle_can_rx,
@@ -114,7 +114,7 @@ int main(void)
 	assert(uart_init());
 	assert(joystick_init());
 	assert(ui_init());
-	assert(m_init_can());
+	assert(m_init_can() == CAN_SUCCESS);
 
 	m_send_joystick_direction_can_msg();
 
