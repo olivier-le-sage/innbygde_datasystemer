@@ -12,6 +12,7 @@
 #include "CAN.h"
 #include <util/delay.h>
 
+
 // initialize external memory mapping
 // Sets the SRAM enable bit in the MCU control register
 // and masks the top 4 bits of the addressing (reserved for JTAG)

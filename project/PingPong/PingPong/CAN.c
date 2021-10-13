@@ -8,6 +8,7 @@
 #include <avr/sfr_defs.h>
 #include "CAN.h"
 #include "mcp2515.h"
+#include "ping_pong.h"
 
 // Size of the buffer for setting up a transmission.
 // Equal to the TX buffer region size minus TXBnCTRL (control reg)
@@ -17,6 +18,8 @@
 // Equal to the RX buffer region size minus RXBnCTRL (control) and RXBnDM (data)
 #define RX_BUFFER_SIZE (5)
 
+// Calculate BRP based on baudrate and CPU frequency
+#define BRP_CALCULATE(baudrate) ((uint8_t) ((((uint32_t)(F_CPU / 2)  / (baudrate)) - 1) & 0x3F))
 
 static can_rx_handler_t m_rx_handler;
 static can_tx_handler_t m_tx_handler;
@@ -234,6 +237,25 @@ uint8_t can_init(const can_init_t * init_params)
         return CAN_ERROR_GENERIC;
     }
 
+	// Configure bit timing configuration
+    
+    uint8_t brp = BRP_CALCULATE(init_params->bit.baudrate);
+    uint8_t cnf1 = (((init_params->bit.sync_jump_len - 1) << 6) & 0xC0) | brp;
+    uint8_t cnf2 = MCP_CNF2_BTLMODE |
+                   MCP_CNF2_SAMPLE_1X |
+                   (((init_params->bit.phase_1_len - 1) << 3) & 0x38) |
+                   ((init_params->bit.prop_seg_len - 1) & 0x07);
+	uint8_t cnf3 = MCP_CNF3_SOF_ENABLE |
+                   MCP_CNF3_WAKFIL_DISABLE |
+                   ((init_params->bit.phase_2_len - 1) & 0x07);
+	mcp2515_write(MCP_CNF1, cnf1); // BRP = 2*TQ
+	mcp2515_write(MCP_CNF2, cnf2);
+	mcp2515_write(MCP_CNF3, cnf3);
+
+	// Verify configuration (validate write order)
+	assert(cnf1 == mcp2515_read(MCP_CNF1));
+	assert(cnf2 == mcp2515_read(MCP_CNF2));
+	assert(cnf3 == mcp2515_read(MCP_CNF3));
     mcp2515_bit_modify(MCP_CANCTRL, MCP_CANCTRL_MODE_MASK, MCP_CANCTRL_MODE_NORMAL);
 
 	return CAN_SUCCESS;
