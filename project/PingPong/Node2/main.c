@@ -5,15 +5,45 @@
  * Author : nilse
  */ 
 
+#include <stddef.h>
+
 #include "printf_stdarg.h"
 
 #include "sam.h"
 #include "uart.h"
 #include "CAN.h"
 
+static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
+{
+	if (data)
+	{
+		char data_str[8 * 2 + 7 + 1] = {0}; // max data bits * 2 + spaces + null byte
+		if (data->len > 0)
+		{	
+			for (uint8_t i = 0; i < data->len; i++)
+			{
+				char *data_str_start = &data_str[2 * i + i];
+				uart_snprintf(data_str_start, 3, "%02X", data->data[i]);
+				data_str_start[2] = ' ';
+			}
+			data_str[3 * data->len - 1] = '\0';	
+		}
+		// For some reason printing the whole thing in one does not work
+		// (maybe printf buffer size or something)
+		uart_printf("[D] {ext: %u, id: %d, len: %u, data: [", id->extended, id->value, data->len);
+		uart_printf("%s", &data_str[0]);
+		uart_printf("] }\n");
+	}
+	else
+	{
+		uart_printf("[R] {ext: %u, id: %d }\n", id->extended, id->value);
+	}
+}
+
 static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
-	
+	uart_printf("RX: ");
+	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? &msg->data : NULL);		
 }
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
@@ -31,7 +61,7 @@ static void m_can_init(void)
 			.tx_buf_count = 1
 		},
 		.bit = {
-			.baudrate = 123, // FIXME
+			.baudrate = 1000000,
 			.sync_jump_len = 1,
 			.prop_seg_len = 1,
 			.phase_1_len = 1,
@@ -52,8 +82,6 @@ int main(void)
 
 	uart_init();
 	m_can_init();
-
-	uart_printf("xyz\n");
 
     /* Replace with your application code */
     while (1) 
