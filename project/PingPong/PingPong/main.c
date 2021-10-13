@@ -134,7 +134,7 @@ int main(void)
 		//printf("left slider=%d%%, right slider=%d%%\n", (m_sliders.left_slider_pos*100)/0xFF, (m_sliders.right_slider_pos*100)/0xFF);
 		//printf("\n");
 
-		_delay_ms(200); // the CPU is too fast
+		_delay_ms(150); // the CPU is too fast
 
 		ui_cmd = UI_DO_NOTHING;
 
