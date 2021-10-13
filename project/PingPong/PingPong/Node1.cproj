@@ -142,6 +142,9 @@
     <Compile Include="CAN.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="can_types.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="controls.c">
       <SubType>compile</SubType>
     </Compile>
