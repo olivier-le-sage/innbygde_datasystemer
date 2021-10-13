@@ -92,7 +92,18 @@ static bool m_init_can()
 {
 	can_init_t init = {
 		.rx_handler = m_handle_can_rx,
-		.tx_handler = m_handle_can_tx
+		.tx_handler = m_handle_can_tx,
+		.buf = {
+			.rx_buf_count = 1,
+			.tx_buf_count = 1
+		},
+		.bit = {
+			.baudrate = 1000000,
+			.sync_jump_len = 1,
+			.prop_seg_len = 1,
+			.phase_1_len = 1,
+			.phase_2_len = 1
+		}
 	};
 	return can_init(&init);
 }
