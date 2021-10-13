@@ -9,6 +9,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Node2", "Node2\Node2.cproj", "{17A2282F-2D72-4571-A53E-3776A5458BBC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{3D666EF1-3ED3-4FB7-99E7-8B014DD970C3}"
+	ProjectSection(SolutionItems) = preProject
+		common\include\CAN.h = common\include\CAN.h
+		common\include\can_types.h = common\include\can_types.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM

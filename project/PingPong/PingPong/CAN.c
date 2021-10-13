@@ -3,6 +3,7 @@
  */
 
 #include <assert.h>
+#include <stdbool.h>
 #include <avr/interrupt.h>
 #include <avr/sfr_defs.h>
 #include "CAN.h"
@@ -24,7 +25,7 @@ static volatile uint8_t m_tx_buf_avail;
 
 
 // Allocate and take one of the available TX buffers
-static int8_t m_tx_buf_alloc(void)
+static bool m_tx_buf_take(uint8_t buf_no)
 {
     uint8_t tx_buf_avail = m_tx_buf_avail;
     for (int8_t i = MCP_TX_BUF_COUNT - 1; i >= 0; i--)
@@ -36,10 +37,10 @@ static int8_t m_tx_buf_alloc(void)
             m_tx_buf_avail &= ~(_BV(i));
             sei();
 
-            return i;
+            return true;
         }
     }
-    return -1;
+    return false;
 }
 
 // Mark a TX buffer as available.
@@ -136,20 +137,21 @@ static void m_rx_parse(uint8_t buf_no, can_msg_rx_t * msg, uint8_t * data_buf)
 
 /* Send a message with the given ID and data
  */
-static int8_t m_send(const can_id_t *id, const can_data_t *data)
+static uint8_t m_send(uint8_t tx_buf_no, const can_id_t *id, const can_data_t *data)
 {
-    int8_t tx_buf = m_tx_buf_alloc();
-    if (tx_buf >= 0)
+    if (m_tx_buf_take(tx_buf_no))
     {
         // Write the message data
-        m_tx_prepare(tx_buf, id, data);
+        m_tx_prepare(tx_buf_no, id, data);
 
-        uint8_t txbctrl_addr = MCP_TXBCTRL_ADDR(tx_buf);
+        uint8_t txbctrl_addr = MCP_TXBCTRL_ADDR(tx_buf_no);
         // Tell the controller to send the message. Use fixed priority for now
         mcp2515_write(txbctrl_addr, MCP_TXBnCTRL_ENCODE(1, MCP_TX_PRIORITY_LOWEST));
+
+        return CAN_SUCCESS;
     }
 
-    return tx_buf;
+    return CAN_ERROR_BUSY;
 }
 
 // Handle completed message reception event
@@ -158,8 +160,8 @@ static void m_rx_evt_handle(uint8_t buf)
     static can_msg_rx_t rx_msg;
     static uint8_t rx_data_buf[MCP_DLC_MAX];
 
-    m_rx_parse(0, &rx_msg, &rx_data_buf[0]);
-    m_rx_handler(&rx_msg);
+    m_rx_parse(buf, &rx_msg, &rx_data_buf[0]);
+    m_rx_handler(buf, &rx_msg);
 }
 
 // Handle completed message transmission event
@@ -215,7 +217,7 @@ static void m_mcp2515_evt_handler(uint8_t int_flags)
     mcp2515_write(MCP_CANINTF, 0);
 }
 
-bool can_init(const can_init_t * init_params)
+uint8_t can_init(const can_init_t * init_params)
 {
     assert(init_params);
     assert(init_params->rx_handler);
@@ -229,29 +231,31 @@ bool can_init(const can_init_t * init_params)
 
     if (!mcp2515_init(&(mcp2515_init_t){ .evt_handler = m_mcp2515_evt_handler }))
     {
-        return false;
+        return CAN_ERROR_GENERIC;
     }
 
     mcp2515_bit_modify(MCP_CANCTRL, MCP_CANCTRL_MODE_MASK, MCP_CANCTRL_MODE_NORMAL);
 
-	return true;
+	return CAN_SUCCESS;
 }
 
-int8_t can_data_send(const can_id_t *id, const can_data_t *data)
+uint8_t can_data_send(uint8_t tx_buf_no, const can_id_t *id, const can_data_t *data)
 {
+    assert(tx_buf_no < MCP_TX_BUF_COUNT);
     assert(id);
     assert(data);
     assert(data->len <= MCP_DLC_MAX);
     assert(data->len == 0 || data->data);
 
-    return m_send(id, data);
+    return m_send(tx_buf_no, id, data);
 }
 
-int8_t can_remote_send(const can_id_t *id)
+uint8_t can_remote_send(uint8_t tx_buf_no, const can_id_t *id)
 {
+    assert(tx_buf_no < MCP_TX_BUF_COUNT);
     assert(id);
 
-    return m_send(id, NULL);
+    return m_send(tx_buf_no, id, NULL);
 }
 
 bool can_send_abort(int8_t handle)
