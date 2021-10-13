@@ -48,13 +48,13 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 }
 
 // Handle received CAN messages
-static void m_handle_can_rx(const can_msg_rx_t *msg)
+static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
 	printf("RX: ");
 	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? &msg->data : NULL);		
 }
 
-static void m_handle_can_tx(int8_t handle)
+static void m_handle_can_tx(uint8_t tx_buf_no)
 {
 }
 
@@ -92,6 +92,16 @@ int main(void)
 		get_sliders_pos(&sliders);
 		printf("left slider=%d%%, right slider=%d%%\n", (sliders.left_slider_pos*100)/0xFF, (sliders.right_slider_pos*100)/0xFF);
 		printf("\n");
+		
+		// TODO: Send joystick direction as a CAN bus message to Node 2
+		// Use TX buffer 0 for joystick direction
+		
+		can_data_t joystick_data;
+		joystick_data.len = 4; // two bytes per direction
+		can_id_t joystick_data_id;
+		joystick_data_id.value = 0; // temp value, replace with some value
+		joystick_data_id.extended = false;
+	
 
 		ui_cmd = UI_DO_NOTHING;
 
