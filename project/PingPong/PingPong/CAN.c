@@ -232,8 +232,7 @@ bool can_init(const can_init_t * init_params)
         return false;
     }
 
-    // Set mode to loop-back (change this later)
-    mcp2515_bit_modify(MCP_CANCTRL, MCP_CANCTRL_MODE_MASK, MCP_CANCTRL_MODE_LOOPBACK);
+    mcp2515_bit_modify(MCP_CANCTRL, MCP_CANCTRL_MODE_MASK, MCP_CANCTRL_MODE_NORMAL);
 
 	return true;
 }
