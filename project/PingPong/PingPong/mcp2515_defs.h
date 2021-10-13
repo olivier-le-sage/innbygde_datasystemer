@@ -153,6 +153,23 @@ typedef enum
 #define MCP_LOAD_TX_BUF(buf_no, d0) (((buf_no) << 1) | ((d0) & 0x01))
 #define MCP_READ_RX_BUF(buf_no, d0) (((buf_no) << 1) | ((d0) & 0x01))
 
+// CANSTAT Register values
+#define MCP_CANSTAT_MODE_NORMAL     0x00
+#define MCP_CANSTAT_MODE_SLEEP      0x20
+#define MCP_CANSTAT_MODE_LOOPBACK   0x40
+#define MCP_CANSTAT_MODE_LISTENONLY 0x60
+#define MCP_CANSTAT_MODE_CONFIG     0x80
+#define MCP_CANSTAT_MODE_MASK		0xE0
+#define MCP_CANSTAT_INT_NONE        0x00
+#define MCP_CANSTAT_INT_ERR         0x02
+#define MCP_CANSTAT_INT_WAK         0x04
+#define MCP_CANSTAT_INT_TXB0        0x06
+#define MCP_CANSTAT_INT_TXB1        0x08
+#define MCP_CANSTAT_INT_TXB2        0x0A
+#define MCP_CANSTAT_INT_RXB0        0x0C
+#define MCP_CANSTAT_INT_RXB1        0x0E
+#define MCP_CANSTAT_INT_MASK        0x0E
+
 // CANCTRL Register Values
 #define MCP_CANCTRL_MODE_NORMAL     0x00
 #define MCP_CANCTRL_MODE_SLEEP      0x20
