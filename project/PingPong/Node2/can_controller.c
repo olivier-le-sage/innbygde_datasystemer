@@ -19,9 +19,9 @@
 
 #define DEBUG_INTERRUPT 0
 
-#define CAN_SYSTEM_CLOCK (1) // FIXME!
+#define F_MCK (12000000)  // 12MHz
 
-#define BRP_CALCULATE(baudrate) ((uint32_t) (CAN_SYSTEM_CLOCK) / ((uint32_t) baudrate) - 1)
+#define BRP_CALCULATE(baudrate) ((uint32_t) (F_MCK) / ((uint32_t) baudrate) - 1)
 
 static can_rx_handler_t m_rx_handler;
 static can_tx_handler_t m_tx_handler;

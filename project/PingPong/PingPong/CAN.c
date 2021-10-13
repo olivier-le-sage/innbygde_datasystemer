@@ -18,8 +18,10 @@
 // Equal to the RX buffer region size minus RXBnCTRL (control) and RXBnDM (data)
 #define RX_BUFFER_SIZE (5)
 
+#define F_MCP_CPU (16000000) // 16MHz
+
 // Calculate BRP based on baudrate and CPU frequency
-#define BRP_CALCULATE(baudrate) ((uint8_t) ((((uint32_t)(F_CPU / 2)  / (baudrate)) - 1) & 0x3F))
+#define BRP_CALCULATE(baudrate) ((uint8_t) ((((uint32_t)(F_MCP_CPU / 2)  / (baudrate)) - 1) & 0x3F))
 
 static can_rx_handler_t m_rx_handler;
 static can_tx_handler_t m_tx_handler;
