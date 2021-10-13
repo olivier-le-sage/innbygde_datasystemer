@@ -17,6 +17,9 @@ int main(void)
     /* Initialize the SAM system */
     SystemInit();
 
+	// Disable watchdog timer (for now)
+	WDT->WDT_MR = WDT_MR_WDDIS;
+
 	uart_init();
 
 	uart_printf("xyz\n");
