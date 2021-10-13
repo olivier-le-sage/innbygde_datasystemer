@@ -203,6 +203,13 @@ typedef enum
 #define MCP_CNF3_SOF_DISABLE	0x00
 #define MCP_CNF3_WAKFIL_ENABLE	0x40
 #define MCP_CNF3_WAKFIL_DISABLE	0x00
+#define MCP_CNF3_PHSEG2_2TQ     0x01
+#define MCP_CNF3_PHSEG2_3TQ     0x02
+#define MCP_CNF3_PHSEG2_4TQ     0x03
+#define MCP_CNF3_PHSEG2_5TQ     0x04
+#define MCP_CNF3_PHSEG2_6TQ     0x05
+#define MCP_CNF3_PHSEG2_7TQ     0x06
+#define MCP_CNF3_PHSEG2_8TQ     0x07
 
 // CANINTE register bits
 #define MCP_CANINTE_RX0IE		0x01

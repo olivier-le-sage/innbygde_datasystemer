@@ -37,6 +37,19 @@ bool mcp2515_init(const mcp2515_init_t * init_params)
     {
         return false;
     }
+	
+	// Configure bit timing configuration
+	uint8_t cnf1 = MCP_CNF1_SJW1;
+	uint8_t cnf2 = MCP_CNF2_SAMPLE_1X | MCP_CNF2_BTLMODE;
+	uint8_t cnf3 = MCP_CNF3_SOF_ENABLE | MCP_CNF3_WAKFIL_DISABLE | MCP_CNF3_PHSEG2_2TQ;
+	mcp2515_write(MCP_CNF1, cnf1); // BRP = 2*TQ
+	mcp2515_write(MCP_CNF2, cnf2);
+	mcp2515_write(MCP_CNF3, cnf3);
+	
+	// Verify configuration (validate write order)
+	assert(cnf1 == mcp2515_read(MCP_CNF1));
+	assert(cnf2 == mcp2515_read(MCP_CNF2));
+	assert(cnf3 == mcp2515_read(MCP_CNF3));
 
     // Configure low level on INT1 to generate an interrupt
     MCUCR &= ~(_BV(ISC10) | _BV(ISC11));
