@@ -27,22 +27,32 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 {
 	if (data)
 	{
-		char data_str[8 * 2 + 7 + 1] = {0}; // max data bits * 2 + spaces + null byte
-		if (data->len > 0)
-		{	
-			for (uint8_t i = 0; i < data->len; i++)
-			{
-				char *data_str_start = &data_str[2 * i + i];
-				m_format_hex_byte(data_str_start, data->data[i]);
-				data_str_start[2] = ' ';
-			}
-			data_str[3 * data->len - 1] = '\0';	
+		if (id->value == 0xF && data->len == 2)
+		{
+			/* Message contains joystick direction, interpret it as such */
+			uart_printf("[Joystick Direction] {%s, %s}\n",
+						joystick_dir_to_str((joystick_direction_t)data->data[0]),
+						joystick_dir_to_str((joystick_direction_t)data->data[1]));
 		}
-		// For some reason printing the whole thing in one does not work
-		// (maybe printf buffer size or something)
-		uart_printf("[D] {ext: %u, id: %d, len: %u, data: [", id->extended, id->value, data->len);
-		uart_printf("%s", &data_str[0]);
-		uart_printf("] }\n");
+		else
+		{
+			char data_str[8 * 2 + 7 + 1] = {0}; // max data bits * 2 + spaces + null byte
+			if (data->len > 0)
+			{	
+				for (uint8_t i = 0; i < data->len; i++)
+				{
+					char *data_str_start = &data_str[2 * i + i];
+					m_format_hex_byte(data_str_start, data->data[i]);
+					data_str_start[2] = ' ';
+				}
+				data_str[3 * data->len - 1] = '\0';	
+			}
+			// For some reason printing the whole thing in one does not work
+			// (maybe printf buffer size or something)
+			uart_printf("[D] {ext: %u, id: %d, len: %u, data: [", id->extended, id->value, data->len);
+			uart_printf("%s", &data_str[0]);
+			uart_printf("] }\n");
+		}
 	}
 	else
 	{
