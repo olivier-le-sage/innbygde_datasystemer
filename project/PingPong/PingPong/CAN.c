@@ -35,8 +35,6 @@ static volatile uint8_t m_tx_buf_avail;
 // Allocate and take the buffer with number buf_no
 static bool m_tx_buf_take(uint8_t buf_no)
 {
-    uint8_t tx_buf_avail = m_tx_buf_avail;
-
     if (m_tx_buf_avail & _BV(buf_no))
     {
         cli();
@@ -262,7 +260,7 @@ uint8_t can_init(const can_init_t * init_params)
     uint8_t cnf2 = MCP_CNF2_ENCODE(1, 0, init_params->bit.phase_1_len - 1,
                                    init_params->bit.prop_seg_len - 1);
     uint8_t cnf3 = MCP_CNF3_ENCODE(1, 0, init_params->bit.phase_2_len - 1);
-    
+
 	mcp2515_write(MCP_CNF1, cnf1); // BRP = 2*TQ
 	mcp2515_write(MCP_CNF2, cnf2);
 	mcp2515_write(MCP_CNF3, cnf3);
