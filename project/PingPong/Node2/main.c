@@ -14,6 +14,15 @@
 #include "controls.h"
 #include "CAN.h"
 
+static void m_format_hex_byte(char * out, uint8_t value)
+{
+	uint8_t lsb = value & 0xF;
+	uint8_t msb = (value >> 4) >> 0xF;
+
+	out[0] = msb < 0xA ? '0' + msb : 'A' + (msb - 0xA);
+	out[1] = lsb < 0xA ? '0' + lsb : 'A' + (msb - 0xA);
+}
+
 static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 {
 	if (data)
@@ -24,7 +33,7 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 			for (uint8_t i = 0; i < data->len; i++)
 			{
 				char *data_str_start = &data_str[2 * i + i];
-				uart_snprintf(data_str_start, 3, "%02X", data->data[i]);
+				m_format_hex_byte(data_str_start, data->data[i]);
 				data_str_start[2] = ' ';
 			}
 			data_str[3 * data->len - 1] = '\0';	
@@ -72,6 +81,15 @@ static void m_can_init(void)
 	};
 
 	(void) can_init(&init);
+}
+
+static void debug_output_mck_on_pin(void)
+{
+
+	// Configure PCK1 to output MCK
+	PMC->PMC_PCK[1] = PMC_PCK_CSS_MCK | PMC_PCK_PRES_CLK_1;
+	// Enable PCK1 output
+	PMC->PMC_SCER = PMC_SCER_PCK1;
 }
 
 int main(void)
