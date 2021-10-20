@@ -133,31 +133,6 @@ void get_joystick_dir(joystick_direction_t *p_first_dir_out, joystick_direction_
 	}
 }
 
-const char * joystick_dir_to_str(joystick_direction_t joystick_dir)
-{
-	switch(joystick_dir)
-	{
-		case NEUTRAL:
-			return "NEUTRAL";
-			break;
-		case LEFT:
-			return "LEFT";
-			break;
-		case RIGHT:
-			return "RIGHT";
-			break;
-		case UP:
-			return "UP";
-			break;
-		case DOWN:
-			return "DOWN";
-			break;
-		default:
-			return "";
-			break;
-	}
-}
-
 void get_sliders_pos(sliders_position_t *p_slider_position_out)
 {
 	uint8_t adc_channels[M_ADC_NUM_CH];
