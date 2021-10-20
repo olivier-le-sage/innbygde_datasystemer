@@ -32,14 +32,14 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 	{
 		char data_str[8 * 2 + 7 + 1] = {0}; // max data bits * 2 + spaces + null byte
 		if (data->len > 0)
-		{	
+		{
 			for (uint8_t i = 0; i < data->len; i++)
 			{
 				char *data_str_start = &data_str[2 * i + i];
 				snprintf(data_str_start, 3, "%02X", data->data[i]);
 				data_str_start[2] = ' ';
 			}
-			data_str[3 * data->len - 1] = '\0';	
+			data_str[3 * data->len - 1] = '\0';
 		}
 		// For some reason printing the whole thing in one does not work
 		// (maybe printf buffer size or something)
@@ -69,7 +69,7 @@ static void m_send_controls_can_msg(void)
 	joystick_msg_data[1] = (uint8_t)m_y_dir;
 	sliders_msg_data[0]  = (uint8_t)m_sliders.right_slider_pos;
 	sliders_msg_data[1]  = (uint8_t)m_sliders.left_slider_pos;
-	
+
 	joystick_data.len = sizeof(joystick_msg_data);
 	joystick_data.data = joystick_msg_data;
 	sliders_data.len = sizeof(sliders_msg_data)
@@ -79,7 +79,7 @@ static void m_send_controls_can_msg(void)
 	joystick_data_id.extended = false;
 	sliders_data_id.value = 0xE;
 	sliders_data_id.extended = false;
-		
+
 	// Use TX buffer 0 to send joystick direction
 	can_data_send(M_JOYSTICK_DATA_TXBUF_NO, &joystick_data_id, &joystick_data);
 
@@ -91,13 +91,14 @@ static void m_send_controls_can_msg(void)
 static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
 	printf("RX: ");
-	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? &msg->data : NULL);		
+	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? &msg->data : NULL);
 }
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
 {
 	if (tx_buf_no == M_JOYSTICK_DATA_TXBUF_NO)
 	{
+		_delay_ms(100);
 		m_send_controls_can_msg();
 	}
 }
@@ -138,13 +139,13 @@ int main(void)
 
 	// Navigate user interface
 	ui_cmd_t ui_cmd;
-	
+
 
 	while(1)
 	{
 		get_joystick_dir(&m_x_dir, &m_y_dir);
 		//printf("Joystick: x-axis dir=%s, y-axis dir=%s\n", joystick_dir_to_str(m_x_dir), joystick_dir_to_str(m_y_dir));
-		
+
 		get_sliders_pos(&m_sliders);
 		//printf("left slider=%d%%, right slider=%d%%\n", (m_sliders.left_slider_pos*100)/0xFF, (m_sliders.right_slider_pos*100)/0xFF);
 		//printf("\n");
