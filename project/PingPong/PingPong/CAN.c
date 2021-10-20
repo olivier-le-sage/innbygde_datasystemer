@@ -315,7 +315,7 @@ uint8_t can_get_error_counters(can_error_counter_t * counts)
 
     assert(counts);
 
-    mcp_read_multiple(MCP_TEC, &buf[0], 2);
+    mcp2515_read_multiple(MCP_TEC, &buf[0], 2);
     counts->tec = buf[0];
     counts->rec = buf[1];
 
