@@ -3,7 +3,7 @@
  *
  * Created: 10/13/2021 10:25:43 AM
  * Author : nilse
- */ 
+ */
 
 #include <stddef.h>
 
@@ -45,14 +45,14 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 		{
 			char data_str[8 * 2 + 7 + 1] = {0}; // max data bits * 2 + spaces + null byte
 			if (data->len > 0)
-			{	
+			{
 				for (uint8_t i = 0; i < data->len; i++)
 				{
 					char *data_str_start = &data_str[2 * i + i];
 					m_format_hex_byte(data_str_start, data->data[i]);
 					data_str_start[2] = ' ';
 				}
-				data_str[3 * data->len - 1] = '\0';	
+				data_str[3 * data->len - 1] = '\0';
 			}
 			// For some reason printing the whole thing in one does not work
 			// (maybe printf buffer size or something)
@@ -70,7 +70,7 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
 	uart_printf("RX: ");
-	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? (&msg->data) : NULL);		
+	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? (&msg->data) : NULL);
 }
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
@@ -84,7 +84,7 @@ static void m_can_init(void)
 		.rx_handler = m_handle_can_rx,
 		.tx_handler = m_handle_can_tx,
 		.buf = {
-			.rx_buf_count = 1,
+			.rx_buf_count = 2,
 			.tx_buf_count = 1
 		},
 		// Same as the example in mcp2515 5.3, i.e. 125kHz CAN bus
@@ -119,9 +119,9 @@ int main(void)
 
 	uart_init();
 	m_can_init();
-	
+
     /* Replace with your application code */
-    while (1) 
+    while (1)
     {
     }
 }
