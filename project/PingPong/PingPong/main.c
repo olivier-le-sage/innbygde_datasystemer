@@ -72,8 +72,8 @@ static void m_send_controls_can_msg(void)
 
 	joystick_data.len = sizeof(joystick_msg_data);
 	joystick_data.data = joystick_msg_data;
-	sliders_data.len = sizeof(sliders_msg_data)
-	sliders_data.data = sliders_msg_data;;
+	sliders_data.len = sizeof(sliders_msg_data);
+	sliders_data.data = sliders_msg_data;
 
 	joystick_data_id.value = 0xF;
 	joystick_data_id.extended = false;
