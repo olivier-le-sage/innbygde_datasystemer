@@ -33,7 +33,7 @@ typedef struct
 	uint8_t left_slider_pos;
 } sliders_position_t;
 
-const char * joystick_dir_to_str(joystick_direction_t joystick_dir)
+static const char * joystick_dir_to_str(joystick_direction_t joystick_dir)
 {
 	switch(joystick_dir)
 	{
