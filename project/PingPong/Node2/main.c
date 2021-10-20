@@ -61,12 +61,13 @@ static void m_can_init(void)
 			.rx_buf_count = 1,
 			.tx_buf_count = 1
 		},
+		// Same as the example in mcp2515 5.3, i.e. 125kHz CAN bus
 		.bit = {
-			.baudrate = 1000000,
+			.baudrate = 2000000,
 			.sync_jump_len = 1,
-			.prop_seg_len = 1,
-			.phase_1_len = 2,
-			.phase_2_len = 2
+			.prop_seg_len = 2,
+			.phase_1_len = 7,
+			.phase_2_len = 6
 		}
 	};
 
@@ -84,8 +85,6 @@ int main(void)
 	uart_init();
 	m_can_init();
 	
-	
-
     /* Replace with your application code */
     while (1) 
     {

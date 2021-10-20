@@ -20,6 +20,9 @@
 
 #define F_MCP_CPU (16000000) // 16MHz
 
+// Information processing time in TQ, starting at ps2
+#define IPT_TQ (2)
+
 // Calculate BRP based on baudrate and CPU frequency
 #define BRP_CALCULATE(baudrate) ((uint8_t) ((((uint32_t)(F_MCP_CPU / 2)  / (baudrate)) - 1) & 0x3F))
 
@@ -127,6 +130,7 @@ static void m_rx_parse(uint8_t buf_no, can_msg_rx_t * msg, uint8_t * data_buf)
     }
 
     msg->data.len = buf[MCP_RXBnDLC_OFFSET] & 0x0F;
+
     // If data present, read it
     if (!remote && msg->data.len > 0)
     {
@@ -218,7 +222,7 @@ static void m_mcp2515_evt_handler(uint8_t int_flags)
         // A message error occurred on transmission or reception.
     }
 
-    /* For now, clear all interrupts unconditionally */
+    // For now, clear all interrupts unconditionally
     mcp2515_write(MCP_CANINTF, 0);
 }
 
@@ -227,6 +231,19 @@ uint8_t can_init(const can_init_t * init_params)
     assert(init_params);
     assert(init_params->rx_handler);
     assert(init_params->tx_handler);
+
+    const can_bit_timing_t * bit_cfg = &init_params->bit;
+
+    /// Check bit timing allowed values
+    assert(1 <= bit_cfg->sync_jump_len && bit_cfg->sync_jump_len <= 4);
+    assert(1 <= bit_cfg->prop_seg_len && bit_cfg->prop_seg_len <= 8);
+    assert(1 <= bit_cfg->phase_1_len && bit_cfg->phase_1_len <= 8);
+    assert(IPT_TQ <= bit_cfg->phase_2_len && bit_cfg->phase_2_len <= 8);
+
+    // Check bit timing requirements; see mcp2515 sec. 5.3
+    assert(bit_cfg->prop_seg_len + bit_cfg->phase_1_len >= bit_cfg->phase_2_len);
+    assert(bit_cfg->phase_2_len > bit_cfg->sync_jump_len);
+
 
     m_rx_handler = init_params->rx_handler;
     m_tx_handler = init_params->tx_handler;
@@ -239,17 +256,16 @@ uint8_t can_init(const can_init_t * init_params)
         return CAN_ERROR_GENERIC;
     }
 
+    // Ensure configuration mode
+    mcp2515_bit_modify(MCP_CANCTRL, MCP_CANCTRL_MODE_MASK, MCP_CANCTRL_MODE_CONFIG);
+
 	// Configure bit timing configuration
-    
     uint8_t brp = BRP_CALCULATE(init_params->bit.baudrate);
-    uint8_t cnf1 = (((init_params->bit.sync_jump_len - 1) << 6) & 0xC0) | brp;
-    uint8_t cnf2 = MCP_CNF2_BTLMODE |
-                   MCP_CNF2_SAMPLE_1X |
-                   (((init_params->bit.phase_1_len - 1) << 3) & 0x38) |
-                   ((init_params->bit.prop_seg_len - 1) & 0x07);
-	uint8_t cnf3 = MCP_CNF3_SOF_ENABLE |
-                   MCP_CNF3_WAKFIL_DISABLE |
-                   ((init_params->bit.phase_2_len - 1) & 0x07);
+    uint8_t cnf1 = MCP_CNF1_ENCODE(init_params->bit.sync_jump_len - 1, brp);
+    uint8_t cnf2 = MCP_CNF2_ENCODE(1, 0, init_params->bit.phase_1_len - 1,
+                                   init_params->bit.prop_seg_len - 1);
+    uint8_t cnf3 = MCP_CNF3_ENCODE(1, 0, init_params->bit.phase_2_len - 1);
+    
 	mcp2515_write(MCP_CNF1, cnf1); // BRP = 2*TQ
 	mcp2515_write(MCP_CNF2, cnf2);
 	mcp2515_write(MCP_CNF3, cnf3);
@@ -258,7 +274,12 @@ uint8_t can_init(const can_init_t * init_params)
 	assert(cnf1 == mcp2515_read(MCP_CNF1));
 	assert(cnf2 == mcp2515_read(MCP_CNF2));
 	assert(cnf3 == mcp2515_read(MCP_CNF3));
-    mcp2515_bit_modify(MCP_CANCTRL, MCP_CANCTRL_MODE_MASK, MCP_CANCTRL_MODE_NORMAL);
+
+    // Set normal mode
+    uint8_t canctrl = MCP_CANCTRL_MODE_NORMAL |
+                      MCP_CANCTRL_CLKOUT_DISABLE |
+                      MCP_CANCTRL_CLKOUT_PS1;
+    mcp2515_write(MCP_CANCTRL, canctrl);
 
 	return CAN_SUCCESS;
 }

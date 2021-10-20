@@ -255,6 +255,18 @@ typedef enum
 #define MCP_TXBnDLC_ENCODE(remote, len) \
     _FORCE_UINT8((((remote) << 6) & 0x40) | ((len)&0x0F))
 
+#define MCP_CNF1_ENCODE(sjw, brp) \
+    _FORCE_UINT8((((sjw) << 6) & 0xC0) | ((brp) & 0x3F))
 
+#define MCP_CNF2_ENCODE(btlmode, sam, phseg1, prseg) \
+    _FORCE_UINT8((((btlmode) << 7) & 0x80) | \
+                 (((sam) << 6) & 0x40) | \
+                 (((phseg1) << 3) & 0x38) | \
+                 ((prseg) & 0x07))
+
+#define MCP_CNF3_ENCODE(sof, wakfil, phseg2) \
+    _FORCE_UINT8((((sof) << 7) & 0x80) | \
+                 (((wakfil) << 6) & 0x40) | \
+                 ((phseg2) & 0x07))
 
 #endif /* MCP2515_DEFS_H__ */
