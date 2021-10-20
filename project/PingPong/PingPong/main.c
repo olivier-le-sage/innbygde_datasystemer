@@ -149,7 +149,7 @@ int main(void)
 	assert(ui_init());
 	assert(m_init_can() == CAN_SUCCESS);
 
-	m_send_controls_can_msg();
+	m_send_controls_can_msg(M_JOYSTICK_DATA);
 
 	// direct printf to the uart
 	uart_config_streams();
