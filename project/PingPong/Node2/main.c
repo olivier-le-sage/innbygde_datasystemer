@@ -37,9 +37,9 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 		else if (id->value == 0xE && data->len == 2)
 		{
 			/* Message contains slider position information, interpret it as such. */
-			uart_printf("[Slider Position] {%s%%, %s%%}\n",
-					    joystick_dir_to_str( (data->data[0]*100)/0xFF ),
-					    joystick_dir_to_str( (data->data[1]*100)/0xFF ));
+			uart_printf("[Slider Position] {%d%%, %d%%}\n",
+					    ((uint32_t)data->data[0]*100)/0xFF,
+					    ((uint32_t)data->data[1]*100)/0xFF);
 		}
 		else
 		{
