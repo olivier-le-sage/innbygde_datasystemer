@@ -63,7 +63,7 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
 	uart_printf("RX: ");
-	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? (joystick_direction_t)(&msg->data) : NULL);		
+	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? (&msg->data) : NULL);		
 }
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
