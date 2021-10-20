@@ -13,6 +13,7 @@
 #include <util/delay.h>
 
 #define M_JOYSTICK_DATA_TXBUF_NO (0)
+#define M_SLIDERS_DATA_TXBUF_NO  (1)
 
 // initialize external memory mapping
 // Sets the SRAM enable bit in the MCU control register
@@ -53,24 +54,37 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 }
 
 // Fetch current joystick information and send it as as can message
-static void m_send_joystick_direction_can_msg(void)
+static void m_send_controls_can_msg(void)
 {
 	can_data_t joystick_data;
+	can_data_t sliders_data;
 	can_id_t joystick_data_id;
-	uint8_t msg_data[2]; // one byte per direction
-	
-	get_joystick_dir(&m_x_dir, &m_y_dir);
-	msg_data[0] = (uint8_t)m_x_dir;
-	msg_data[1] = (uint8_t)m_y_dir;
-	
-	joystick_data.len = sizeof(msg_data);
-	joystick_data.data = msg_data;
+	can_id_t sliders_data_id;
+	uint8_t joystick_msg_data[2]; // one byte per direction
+	uint8_t sliders_msg_data[2]; // one byte per slider
 
-	joystick_data_id.value = 0xF; // TODO replace temp ID
+	get_joystick_dir(&m_x_dir, &m_y_dir);
+	get_sliders_pos(&m_sliders);
+	joystick_msg_data[0] = (uint8_t)m_x_dir;
+	joystick_msg_data[1] = (uint8_t)m_y_dir;
+	sliders_msg_data[0]  = (uint8_t)m_sliders.right_slider_pos;
+	sliders_msg_data[1]  = (uint8_t)m_sliders.left_slider_pos;
+	
+	joystick_data.len = sizeof(joystick_msg_data);
+	joystick_data.data = joystick_msg_data;
+	sliders_data.len = sizeof(sliders_msg_data)
+	sliders_data.data = sliders_msg_data;;
+
+	joystick_data_id.value = 0xF;
 	joystick_data_id.extended = false;
+	sliders_data_id.value = 0xE;
+	sliders_data_id.extended = false;
 		
 	// Use TX buffer 0 to send joystick direction
 	can_data_send(M_JOYSTICK_DATA_TXBUF_NO, &joystick_data_id, &joystick_data);
+
+	// Use TX buffer 1 to send slider information
+	can_data_send(M_SLIDERS_DATA_TXBUF_NO, &sliders_data_id, &sliders_data);
 }
 
 // Handle received CAN messages
@@ -84,7 +98,7 @@ static void m_handle_can_tx(uint8_t tx_buf_no)
 {
 	if (tx_buf_no == M_JOYSTICK_DATA_TXBUF_NO)
 	{
-		m_send_joystick_direction_can_msg();
+		m_send_controls_can_msg();
 	}
 }
 
@@ -95,7 +109,7 @@ static uint8_t m_init_can()
 		.tx_handler = m_handle_can_tx,
 		.buf = {
 			.rx_buf_count = 1,
-			.tx_buf_count = 1
+			.tx_buf_count = 2
 		},
 		// Same as the example in mcp2515 5.3, i.e. 125kHz CAN bus
 		.bit = {
@@ -117,7 +131,7 @@ int main(void)
 	assert(ui_init());
 	assert(m_init_can() == CAN_SUCCESS);
 
-	m_send_joystick_direction_can_msg();
+	m_send_controls_can_msg();
 
 	// direct printf to the uart
 	uart_config_streams();
