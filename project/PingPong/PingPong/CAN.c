@@ -32,22 +32,19 @@ static can_tx_handler_t m_tx_handler;
 static volatile uint8_t m_tx_buf_avail;
 
 
-// Allocate and take one of the available TX buffers
+// Allocate and take the buffer with number buf_no
 static bool m_tx_buf_take(uint8_t buf_no)
 {
     uint8_t tx_buf_avail = m_tx_buf_avail;
-    for (int8_t i = MCP_TX_BUF_COUNT - 1; i >= 0; i--)
-    {
-        if (tx_buf_avail >> i)
-        {
-            // Turn off interrupts and clear the availability bit
-            cli();
-            m_tx_buf_avail &= ~(_BV(i));
-            sei();
 
-            return true;
-        }
+    if (m_tx_buf_avail & _BV(buf_no))
+    {
+        cli();
+        m_tx_buf_avail &= ~(_BV(buf_no));
+        sei();
+        return true;
     }
+
     return false;
 }
 
