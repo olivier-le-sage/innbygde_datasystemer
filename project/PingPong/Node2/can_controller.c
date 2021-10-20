@@ -19,7 +19,7 @@
 
 #define DEBUG_INTERRUPT 0
 
-#define F_MCK (12000000)  // 12MHz
+#define F_MCK (84000000)  // 84MHz
 
 #define BRP_CALCULATE(baudrate) ((uint32_t) (F_MCK) / ((uint32_t) baudrate) - 1)
 
@@ -194,7 +194,7 @@ uint8_t can_init(const can_init_t * init_params)
     {
         CAN0->CAN_MB[n].CAN_MID = CAN_MID_MIDE;
         CAN0->CAN_MB[n].CAN_MMR = (CAN_MMR_MOT_MB_TX);
-		
+
 		can_ier |= 1 << n; //Enable interrupt on tx mailboxes
     }
 
@@ -207,7 +207,7 @@ uint8_t can_init(const can_init_t * init_params)
         CAN0->CAN_MB[n].CAN_MID = CAN_MID_MIDE;
         CAN0->CAN_MB[n].CAN_MMR = (CAN_MMR_MOT_MB_RX);
         CAN0->CAN_MB[n].CAN_MCR |= CAN_MCR_MTCR;
-		
+
 		can_ier |= 1 << n; //Enable interrupt on rx mailboxes
     }
 
