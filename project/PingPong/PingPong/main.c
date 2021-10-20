@@ -20,6 +20,9 @@
 // and masks the top 4 bits of the addressing (reserved for JTAG)
 #define ENABLE_SRAM() {MCUCR |= _BV(SRE); SFIOR |= _BV(XMM2);}
 
+#define M_JOYSTICK_DATA (true)
+#define M_SLIDERS_DATA  (false)
+
 static joystick_direction_t m_x_dir;
 static joystick_direction_t m_y_dir;
 static sliders_position_t m_sliders;
@@ -54,37 +57,46 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 }
 
 // Fetch current joystick information and send it as as can message
-static void m_send_controls_can_msg(void)
+static void m_send_controls_can_msg(bool data_type)
 {
-	can_data_t joystick_data;
-	can_data_t sliders_data;
-	can_id_t joystick_data_id;
-	can_id_t sliders_data_id;
-	uint8_t joystick_msg_data[2]; // one byte per direction
-	uint8_t sliders_msg_data[2]; // one byte per slider
+	if (data_type == M_JOYSTICK_DATA)
+	{
+		can_data_t joystick_data;
+		can_id_t joystick_data_id;
+		uint8_t joystick_msg_data[2]; // one byte per direction
 
-	get_joystick_dir(&m_x_dir, &m_y_dir);
-	get_sliders_pos(&m_sliders);
-	joystick_msg_data[0] = (uint8_t)m_x_dir;
-	joystick_msg_data[1] = (uint8_t)m_y_dir;
-	sliders_msg_data[0]  = (uint8_t)m_sliders.right_slider_pos;
-	sliders_msg_data[1]  = (uint8_t)m_sliders.left_slider_pos;
+		get_joystick_dir(&m_x_dir, &m_y_dir);
+		joystick_msg_data[0] = (uint8_t)m_x_dir;
+		joystick_msg_data[1] = (uint8_t)m_y_dir;
+		joystick_data.len = sizeof(joystick_msg_data);
+		joystick_data.data = joystick_msg_data;
+		joystick_data_id.value = 0xF;
+		joystick_data_id.extended = false;
 
-	joystick_data.len = sizeof(joystick_msg_data);
-	joystick_data.data = joystick_msg_data;
-	sliders_data.len = sizeof(sliders_msg_data);
-	sliders_data.data = sliders_msg_data;
+		// Use TX buffer 0 to send joystick direction
+		can_data_send(M_JOYSTICK_DATA_TXBUF_NO, &joystick_data_id, &joystick_data);
+	}
+	else if (data_type == M_SLIDERS_DATA)
+	{
+		can_data_t sliders_data;
+		can_id_t sliders_data_id;
+		uint8_t sliders_msg_data[2]; // one byte per slider
 
-	joystick_data_id.value = 0xF;
-	joystick_data_id.extended = false;
-	sliders_data_id.value = 0xE;
-	sliders_data_id.extended = false;
+		get_sliders_pos(&m_sliders);
+		sliders_msg_data[0]  = (uint8_t)m_sliders.right_slider_pos;
+		sliders_msg_data[1]  = (uint8_t)m_sliders.left_slider_pos;
+		sliders_data.len = sizeof(sliders_msg_data);
+		sliders_data.data = sliders_msg_data;
+		sliders_data_id.value = 0xE;
+		sliders_data_id.extended = false;
 
-	// Use TX buffer 0 to send joystick direction
-	can_data_send(M_JOYSTICK_DATA_TXBUF_NO, &joystick_data_id, &joystick_data);
-
-	// Use TX buffer 1 to send slider information
-	can_data_send(M_SLIDERS_DATA_TXBUF_NO, &sliders_data_id, &sliders_data);
+		// Use TX buffer 1 to send slider information
+		can_data_send(M_SLIDERS_DATA_TXBUF_NO, &sliders_data_id, &sliders_data);
+	}
+	else
+	{
+		assert(false); // Invalid
+	}
 }
 
 // Handle received CAN messages
@@ -96,10 +108,15 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
 {
+	_delay_ms(100);
+
 	if (tx_buf_no == M_JOYSTICK_DATA_TXBUF_NO)
 	{
-		_delay_ms(100);
-		m_send_controls_can_msg();
+		m_send_controls_can_msg(M_JOYSTICK_DATA);
+	}
+	else if (tx_buf_no == M_SLIDERS_DATA_TXBUF_NO)
+	{
+		m_send_controls_can_msg(M_SLIDERS_DATA);
 	}
 }
 
