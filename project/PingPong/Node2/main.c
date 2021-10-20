@@ -20,7 +20,7 @@ static void m_format_hex_byte(char * out, uint8_t value)
 	uint8_t msb = (value >> 4) >> 0xF;
 
 	out[0] = msb < 0xA ? '0' + msb : 'A' + (msb - 0xA);
-	out[1] = lsb < 0xA ? '0' + lsb : 'A' + (msb - 0xA);
+	out[1] = lsb < 0xA ? '0' + lsb : 'A' + (lsb - 0xA);
 }
 
 static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
