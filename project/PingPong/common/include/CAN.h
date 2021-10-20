@@ -49,3 +49,4 @@ uint8_t can_data_send(uint8_t tx_buf_no, const can_id_t *id, const can_data_t *d
 // Send a CAN remote message (data request)
 uint8_t can_remote_send(uint8_t tx_buf_no, const can_id_t *id);
 
+uint8_t can_get_error_counters(can_error_counter_t * counts);

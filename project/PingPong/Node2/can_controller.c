@@ -282,3 +282,11 @@ uint8_t can_data_send(uint8_t tx_buf_no, const can_id_t *id, const can_data_t *d
     return CAN_SUCCESS;
 }
 
+uint8_t can_get_error_counters(can_error_counter_t * counts)
+{
+    uint32_t ecr = CAN0->CAN_ECR;
+    counts->tec = (ecr & CAN_ECR_TEC_Msk) >> CAN_ECR_TEC_Pos;
+    counts->rec = (ecr & CAN_ECR_REC_Msk) >> CAN_ECR_REC_Pos;
+
+    return CAN_SUCCESS;
+}

@@ -29,4 +29,10 @@ typedef struct
     can_data_t data;
 } can_msg_rx_t;
 
+typedef struct
+{
+    uint8_t tec;
+    uint8_t rec;
+} can_error_counter_t;
+
 #endif /* CAN_TYPES_H__*/

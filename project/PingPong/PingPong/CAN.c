@@ -308,3 +308,16 @@ bool can_send_abort(int8_t handle)
     // TODO
     return false;
 }
+
+uint8_t can_get_error_counters(can_error_counter_t * counts)
+{
+    uint8_t buf[2];
+
+    assert(counts);
+
+    mcp_read_multiple(MCP_TEC, &buf[0], 2);
+    counts->tec = buf[0];
+    counts->rec = buf[1];
+
+    return CAN_SUCCESS;
+}
