@@ -95,7 +95,7 @@ void pwm_channels_disable(uint8_t channels)
     PWM->PWM_DIS = (uint32_t) channels;
 }
 
-void pwm_channel_mode_set(uint8_t channel, pwm_channel_cfg_t * cfg)
+void pwm_channel_mode_set(uint8_t channel, const pwm_channel_mode_t * cfg)
 {
     // Selection of the clock for each channel (CPRE field in the PWM_CMRx register)
     // Configuration of the waveform alignment for each channel (CALG field in the PWM_CMRx register)

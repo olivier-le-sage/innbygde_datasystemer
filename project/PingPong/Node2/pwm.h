@@ -54,7 +54,7 @@ typedef struct
     pwm_ch_align_t alignment;
     pwm_ch_polarity_t polarity;
     pwm_ch_counter_evt_t counter_event_selection;
-} pwm_channel_cfg_t;
+} pwm_channel_mode_t;
 
 
 void pwm_init(const pwm_init_t * init);
@@ -62,7 +62,8 @@ void pwm_init(const pwm_init_t * init);
 void pwm_channels_enable(uint8_t channels);
 void pwm_channels_disable(uint8_t channels);
 
-void pwm_channel_mode_set(uint8_t channel, pwm_channel_cfg_t * cfg);
+void pwm_channel_mode_set(uint8_t channel, const pwm_channel_mode_t * cfg);
+
 
 void pwm_channel_duty_cycle_set(uint8_t channel, uint16_t duty_cycle);
 void pwm_channel_duty_cycle_update(uint8_t channel, uint16_t duty_cycle);
