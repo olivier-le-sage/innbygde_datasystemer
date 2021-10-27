@@ -1,6 +1,8 @@
 #ifndef SERVO_H__
 #define SERVO_H__
 
+#include <stdint.h>
+
 // Initialize the servo
 void servo_init(void);
 // Set the servo position in the allowed range [0, 120)

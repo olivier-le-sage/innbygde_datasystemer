@@ -18,7 +18,7 @@
 #define MCK_8_FACTOR_FOR_TICK 105
 
 #define TC_RC_VALUE (SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK)
-#define TC_RA_VALUE(_v) (TC_RC_VALUE - (uint32_t) ((_v) * MCK_8_FACTOR_FOR_TICK))
+#define TC_RA_VALUE(_v) (TC_RC_VALUE - (((uint32_t) (_v)) * MCK_8_FACTOR_FOR_TICK))
 
 void servo_init(void)
 {
@@ -27,25 +27,25 @@ void servo_init(void)
                    PMC_PCR_CMD |
                    PMC_PCR_DIV_PERIPH_DIV_MCK |
                    PMC_PCR_EN;
-    PMC->PCER0 |= ID_TC0;
+    PMC->PMC_PCER0 |= ID_TC0;
 
     // Configure output pin for TC0 TIOA0
     PIOB->PIO_IDR = PIO_PB25B_TIOA0; // Disable interrupt on pin
     PIOB->PIO_ABSR |= PIO_PB25B_TIOA0; // Assign pin to peripheral B
-    PIOB->PIO_PDR = PIO_P25B_TIOA0;  // Let peripheral control pin
+    PIOB->PIO_PDR = PIO_PB25B_TIOA0;  // Let peripheral control pin
 
-    TC0->TC_CMR0 = TC_CMR_TCCLKS_TIMER_CLOCK2 |
+    TC0->TC_CHANNEL[0].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK2 |
                    TC_CMR_WAVE |
                    TC_CMR_WAVSEL_UP_RC |
                    TC_CMR_ACPA_SET |
                    TC_CMR_ACPC_CLEAR;
 
     // Reset counter on this value
-    TC0->TC_RC = SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK;
+    TC0->TC_CHANNEL[0].TC_RC = SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK;
     // Set neutral position
-    TC0->TC_RA = TC_RA_VALUE(SERVO_NEUTRAL_STEPS);
+    TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(SERVO_NEUTRAL_STEPS);
 
-    TC0->TC_CCR0 = TC_CCR_CLKEN;
+    TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN;
 }
 
 void servo_position_set(uint16_t position)
@@ -55,5 +55,5 @@ void servo_position_set(uint16_t position)
         return;
     }
 
-    pwm_channel_duty_cycle_update(SERVO_PWM_CHANNEL, position + SERVO_MIN_STEPS);
+    TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(position + SERVO_MIN_STEPS);
 }
