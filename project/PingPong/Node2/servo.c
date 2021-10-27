@@ -1,6 +1,8 @@
 #include "servo.h"
 #include "pwm.h"
 
+#include <sam3x8e.h>
+
 #define SERVO_MIN_STEPS 90
 #define SERVO_MAX_STEPS 210
 #define SERVO_NEUTRAL_STEPS ((SERVO_MAX_STEPS + SERVO_MIN_STEPS) / 2)
@@ -19,6 +21,12 @@ void servo_init(void)
 
     // With T=0.01ms we get (2.1 - 0.9) / 0.01 = 120 steps (angles)
 
+    // Configure output pin (PC3) for PWM0HI
+    PIOC->PIO_IDR = PIO_PC3B_PWMH0; // Disable interrupt on pin
+    PIOC->PIO_ABSR |= PIO_PC3B_PWMH0; // Assign pin to peripheral B
+    PIOC->PIO_PDR = PIO_PC3B_PWMH0;  // Let peripheral control pin
+
+    // Configure PWM
     pwm_init_t pwm_cfg = {
         .prescaler_a = PWM_CLK_PRE_MCK_DIV_8,
         .clock_divide_factor_a = 105,
