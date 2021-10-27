@@ -153,6 +153,23 @@ typedef enum
 #define MCP_LOAD_TX_BUF(buf_no, d0) (((buf_no) << 1) | ((d0) & 0x01))
 #define MCP_READ_RX_BUF(buf_no, d0) (((buf_no) << 1) | ((d0) & 0x01))
 
+// CANSTAT Register values
+#define MCP_CANSTAT_MODE_NORMAL     0x00
+#define MCP_CANSTAT_MODE_SLEEP      0x20
+#define MCP_CANSTAT_MODE_LOOPBACK   0x40
+#define MCP_CANSTAT_MODE_LISTENONLY 0x60
+#define MCP_CANSTAT_MODE_CONFIG     0x80
+#define MCP_CANSTAT_MODE_MASK		0xE0
+#define MCP_CANSTAT_INT_NONE        0x00
+#define MCP_CANSTAT_INT_ERR         0x02
+#define MCP_CANSTAT_INT_WAK         0x04
+#define MCP_CANSTAT_INT_TXB0        0x06
+#define MCP_CANSTAT_INT_TXB1        0x08
+#define MCP_CANSTAT_INT_TXB2        0x0A
+#define MCP_CANSTAT_INT_RXB0        0x0C
+#define MCP_CANSTAT_INT_RXB1        0x0E
+#define MCP_CANSTAT_INT_MASK        0x0E
+
 // CANCTRL Register Values
 #define MCP_CANCTRL_MODE_NORMAL     0x00
 #define MCP_CANCTRL_MODE_SLEEP      0x20
@@ -186,6 +203,13 @@ typedef enum
 #define MCP_CNF3_SOF_DISABLE	0x00
 #define MCP_CNF3_WAKFIL_ENABLE	0x40
 #define MCP_CNF3_WAKFIL_DISABLE	0x00
+#define MCP_CNF3_PHSEG2_2TQ     0x01
+#define MCP_CNF3_PHSEG2_3TQ     0x02
+#define MCP_CNF3_PHSEG2_4TQ     0x03
+#define MCP_CNF3_PHSEG2_5TQ     0x04
+#define MCP_CNF3_PHSEG2_6TQ     0x05
+#define MCP_CNF3_PHSEG2_7TQ     0x06
+#define MCP_CNF3_PHSEG2_8TQ     0x07
 
 // CANINTE register bits
 #define MCP_CANINTE_RX0IE		0x01
@@ -231,6 +255,18 @@ typedef enum
 #define MCP_TXBnDLC_ENCODE(remote, len) \
     _FORCE_UINT8((((remote) << 6) & 0x40) | ((len)&0x0F))
 
+#define MCP_CNF1_ENCODE(sjw, brp) \
+    _FORCE_UINT8((((sjw) << 6) & 0xC0) | ((brp) & 0x3F))
 
+#define MCP_CNF2_ENCODE(btlmode, sam, phseg1, prseg) \
+    _FORCE_UINT8((((btlmode) << 7) & 0x80) | \
+                 (((sam) << 6) & 0x40) | \
+                 (((phseg1) << 3) & 0x38) | \
+                 ((prseg) & 0x07))
+
+#define MCP_CNF3_ENCODE(sof, wakfil, phseg2) \
+    _FORCE_UINT8((((sof) << 7) & 0x80) | \
+                 (((wakfil) << 6) & 0x40) | \
+                 ((phseg2) & 0x07))
 
 #endif /* MCP2515_DEFS_H__ */

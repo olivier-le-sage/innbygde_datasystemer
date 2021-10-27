@@ -30,6 +30,15 @@ bool mcp2515_init(const mcp2515_init_t * init_params)
     };
     spi_master_init(&spi_init);
 
+    mcp2515_reset();
+
+    uint8_t canstat = mcp2515_read(MCP_CANSTAT);
+    if ((canstat & MCP_CANSTAT_MODE_MASK) != MCP_CANSTAT_MODE_CONFIG)
+    {
+        return false;
+    }
+	
+
     // Configure low level on INT1 to generate an interrupt
     MCUCR &= ~(_BV(ISC10) | _BV(ISC11));
     // Enable external interrupt on INT1

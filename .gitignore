@@ -52,6 +52,6 @@ Mkfile.old
 dkms.conf
 
 # Microchip studio files
-project/PingPong/PingPong/Debug
-project/PingPong/PingPong/Release
+project/PingPong/*/Debug
+project/PingPong/*/Release
 project/PingPong/.vs
