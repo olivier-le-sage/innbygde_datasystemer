@@ -1,5 +1,4 @@
 #include "servo.h"
-#include "timer_counter.h"
 
 #include <sam3x8e.h>
 
@@ -29,6 +28,8 @@ void servo_init(void)
                    PMC_PCR_EN;
     PMC->PMC_PCER0 |= ID_TC0;
 
+	TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKDIS;
+
     // Configure output pin for TC0 TIOA0
     PIOB->PIO_IDR = PIO_PB25B_TIOA0; // Disable interrupt on pin
     PIOB->PIO_ABSR |= PIO_PB25B_TIOA0; // Assign pin to peripheral B
@@ -45,12 +46,12 @@ void servo_init(void)
     // Set neutral position
     TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(SERVO_NEUTRAL_STEPS);
 
-    TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN;
+    TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
 }
 
 void servo_position_set(uint16_t position)
 {
-    if (position > SERVO_STEP_COUNT)
+    if (position >= SERVO_STEP_COUNT)
     {
         return;
     }
