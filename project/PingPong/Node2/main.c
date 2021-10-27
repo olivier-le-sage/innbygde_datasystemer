@@ -12,7 +12,11 @@
 #include "sam.h"
 #include "uart.h"
 #include "controls.h"
+#include "servo.h"
 #include "CAN.h"
+
+/* TODO: Fine-tune this value for an enhanced user experience */
+#define M_JOYSTICK_IMPACT_ON_SERVO (1)
 
 static void m_format_hex_byte(char * out, uint8_t value)
 {
@@ -27,14 +31,14 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 {
 	if (data)
 	{
-		if (id->value == 0xF && data->len == 2)
+		if (id->value == CAN_JOYSTICK_MSG_ID && data->len == 2)
 		{
 			/* Message contains joystick direction, interpret it as such */
 			uart_printf("[Joystick Direction] {%s, %s}\n",
 						joystick_dir_to_str((joystick_direction_t)data->data[0]),
 						joystick_dir_to_str((joystick_direction_t)data->data[1]));
 		}
-		else if (id->value == 0xE && data->len == 2)
+		else if (id->value == CAN_SLIDER_MSG_ID && data->len == 2)
 		{
 			/* Message contains slider position information, interpret it as such. */
 			uart_printf("[Slider Position] {%d%%, %d%%}\n",
@@ -71,6 +75,20 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
 	uart_printf("RX: ");
 	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? (&msg->data) : NULL);
+	
+	if (msg->id->value == CAN_JOYSTICK_MSG_ID && msg->data->len == 2)
+	{
+		/* Use the joystick direction values to adjust the servo position */
+		joystick_direction_t x_dir = msg->data->data[0];
+		if (x_dir == LEFT)
+		{
+			servo_position_adjust(M_JOYSTICK_IMPACT_ON_SERVO);
+		}
+		else if (x_dir == RIGHT)
+		{
+			servo_position_adjust(-1* (int16_t)M_JOYSTICK_IMPACT_ON_SERVO);
+		}
+	} 
 }
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
@@ -120,6 +138,7 @@ int main(void)
 	WDT->WDT_MR = WDT_MR_WDDIS;
 
 	uart_init();
+	servo_init();
 	m_can_init();
 
     /* Replace with your application code */

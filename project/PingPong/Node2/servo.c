@@ -19,6 +19,8 @@
 #define TC_RC_VALUE (SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK)
 #define TC_RA_VALUE(_v) (TC_RC_VALUE - (((uint32_t) (_v)) * MCK_8_FACTOR_FOR_TICK))
 
+static uint16_t m_current_servo_position;
+
 void servo_init(void)
 {
     // Enable clock
@@ -47,6 +49,18 @@ void servo_init(void)
     TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(SERVO_NEUTRAL_STEPS);
 
     TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
+
+    m_current_servo_position = SERVO_NEUTRAL_STEPS;
+}
+
+void servo_position_adjust(int16_t delta)
+{
+    if (((int16_t)m_current_servo_position + delta >= SERVO_MIN_STEPS)
+        && ( (int16_t)m_current_servo_position + delta <= SERVO_MAX_STEPS))
+    {
+        m_current_servo_position += delta;
+        TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS + delta);
+    }
 }
 
 void servo_position_set(uint16_t position)

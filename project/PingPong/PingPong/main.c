@@ -70,7 +70,7 @@ static void m_send_controls_can_msg(bool data_type)
 		joystick_msg_data[1] = (uint8_t)m_y_dir;
 		joystick_data.len = sizeof(joystick_msg_data);
 		joystick_data.data = joystick_msg_data;
-		joystick_data_id.value = 0xF;
+		joystick_data_id.value = CAN_JOYSTICK_MSG_ID;
 		joystick_data_id.extended = false;
 
 		// Use TX buffer 0 to send joystick direction
@@ -87,7 +87,7 @@ static void m_send_controls_can_msg(bool data_type)
 		sliders_msg_data[1]  = (uint8_t)m_sliders.left_slider_pos;
 		sliders_data.len = sizeof(sliders_msg_data);
 		sliders_data.data = sliders_msg_data;
-		sliders_data_id.value = 0xE;
+		sliders_data_id.value = CAN_SLIDER_MSG_ID;
 		sliders_data_id.extended = false;
 
 		// Use TX buffer 1 to send slider information
