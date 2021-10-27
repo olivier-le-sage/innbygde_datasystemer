@@ -35,7 +35,10 @@ void pwm_init(const pwm_init_t * init)
     }
 
     // Enable PWM clock in PMC
-    PMC->PMC_PCR = PMC_PCR_EN | (0 << PMC_PCR_DIV_Pos) | PMC_PCR_CMD | (ID_PWM << PMC_PCR_PID_Pos);
+    PMC->PMC_PCR =  PMC_PCR_PID(ID_PWM) |
+                    PMC_PCR_CMD |
+                    PMC_PCR_DIV_PERIPH_DIV_MCK |
+                    PMC_PCR_EN;
     PMC->PMC_PCER1 |= 1 << (ID_PWM - 32);
 
     // Configuration of the clock generator (DIVA, PREA, DIVB, PREB in the PWM_CLK register if required).
@@ -43,7 +46,6 @@ void pwm_init(const pwm_init_t * init)
                    PWM_CLK_PREA((uint32_t) init->prescaler_a) |
                    PWM_CLK_DIVB(init->clock_divide_factor_b) |
                    PWM_CLK_PREB((uint32_t) init->prescaler_b);
-
 
     // Configuration of the period for each channel (CPRD in the PWM_CPRDx register). Writing in PWM_CPRDx
     //   register is possible while the channel is disabled. After validation of the channel, the user must use
