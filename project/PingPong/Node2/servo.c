@@ -9,7 +9,7 @@
 
 #define SERVO_PWM_PERIOD 2000
 
-#define SERVO_PWM_CHANNEL 0
+#define SERVO_PWM_CHANNEL 2
 
 void servo_init(void)
 {
@@ -21,10 +21,10 @@ void servo_init(void)
 
     // With T=0.01ms we get (2.1 - 0.9) / 0.01 = 120 steps (angles)
 
-    // Configure output pin (PC3) for PWM0HI
-    PIOC->PIO_IDR = PIO_PC3B_PWMH0; // Disable interrupt on pin
-    PIOC->PIO_ABSR |= PIO_PC3B_PWMH0; // Assign pin to peripheral B
-    PIOC->PIO_PDR = PIO_PC3B_PWMH0;  // Let peripheral control pin
+    // Configure output pin for PWMxHI
+    PIOC->PIO_IDR = PIO_PC7B_PWMH2; // Disable interrupt on pin
+    PIOC->PIO_ABSR |= PIO_PC7B_PWMH2; // Assign pin to peripheral B
+    PIOC->PIO_PDR = PIO_PC7B_PWMH2;  // Let peripheral control pin
 
     // Configure PWM
     pwm_init_t pwm_cfg = {
