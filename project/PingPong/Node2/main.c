@@ -13,10 +13,14 @@
 #include "uart.h"
 #include "controls.h"
 #include "servo.h"
+#include "ir.h"
 #include "CAN.h"
 
 /* TODO: Fine-tune this value for an enhanced user experience */
 #define M_JOYSTICK_IMPACT_ON_SERVO (1)
+
+/* Goals are registered when the IR beam is blocked. 1 block = 1 point */
+static uint32_t m_current_game_score;
 
 static void m_format_hex_byte(char * out, uint8_t value)
 {
@@ -118,6 +122,11 @@ static void m_can_init(void)
 	(void) can_init(&init);
 }
 
+static void m_score_reset(void)
+{
+	m_current_game_score = 0;
+}
+
 static void debug_output_mck_on_pin(void)
 {
 
@@ -134,15 +143,20 @@ int main(void)
 	
 	debug_output_mck_on_pin();
 
+	m_score_reset();
+
 	// Disable watchdog timer (for now)
 	WDT->WDT_MR = WDT_MR_WDDIS;
 
 	uart_init();
+	ir_adc_init();
 	servo_init();
 	m_can_init();
 
     /* Replace with your application code */
     while (1)
     {
+		/* Poll IR to get the user score. */
+		m_current_game_score = ir_blocked_count_get();
     }
 }

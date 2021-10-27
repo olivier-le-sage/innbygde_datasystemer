@@ -170,6 +170,12 @@
     <Compile Include="Device_Startup\system_sam3xa.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="ir.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ir.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="printf_stdarg.c">
       <SubType>compile</SubType>
     </Compile>
