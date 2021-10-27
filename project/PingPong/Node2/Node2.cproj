@@ -164,9 +164,6 @@
     <Compile Include="can_controller.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="can_controller.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="Device_Startup\startup_sam3xa.c">
       <SubType>compile</SubType>
     </Compile>

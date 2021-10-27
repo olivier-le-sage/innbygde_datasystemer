@@ -113,6 +113,8 @@ int main(void)
 {
     /* Initialize the SAM system */
     SystemInit();
+	
+	debug_output_mck_on_pin();
 
 	// Disable watchdog timer (for now)
 	WDT->WDT_MR = WDT_MR_WDDIS;

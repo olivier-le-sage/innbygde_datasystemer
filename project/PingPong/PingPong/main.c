@@ -46,13 +46,13 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 		}
 		// For some reason printing the whole thing in one does not work
 		// (maybe printf buffer size or something)
-		printf("[D] {ext: %u, id: %d, len: %u, data: [", (uint32_t)id->extended, (int)id->value, (uint32_t)data->len);
+		printf("[D] {ext: %u, id: %d, len: %u, data: [", (int)id->extended, (int)id->value, (int)data->len);
 		printf("%s", &data_str[0]);
 		printf("] }\n");
 	}
 	else
 	{
-		printf("[R] {ext: %u, id: %d }\n", (uint32_t)id->extended, (int)id->value);
+		printf("[R] {ext: %u, id: %d }\n", (int)id->extended, (int)id->value);
 	}
 }
 
