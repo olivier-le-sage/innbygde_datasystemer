@@ -1,48 +1,59 @@
 #include "servo.h"
-#include "pwm.h"
+#include "timer_counter.h"
 
 #include <sam3x8e.h>
 
+// Minimum allowed duty cycle in PWM ticks (=0.9ms)
 #define SERVO_MIN_STEPS 90
+// Maximum allowed duty cycle in PWM ticks (=2.1ms)
 #define SERVO_MAX_STEPS 210
+// Duty cycle for neutral servo position (apx. 1.5ms)
 #define SERVO_NEUTRAL_STEPS ((SERVO_MAX_STEPS + SERVO_MIN_STEPS) / 2)
+// Number of servo positions
+#define SERVO_STEP_COUNT (SERVO_MAX_STEPS - SERVO_MIN_STEPS)
 
+// Period for the PWM used for the servo
 #define SERVO_PWM_PERIOD 2000
 
-#define SERVO_PWM_CHANNEL 2
+#define MCK_8_FACTOR_FOR_TICK 105
+
+#define TC_RC_VALUE (SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK)
+#define TC_RA_VALUE(_v) (TC_RC_VALUE - (uint32_t) ((_v) * MCK_8_FACTOR_FOR_TICK))
 
 void servo_init(void)
 {
-    // Signal period should be 20ms = 50Hz
-    // Signal duty cycle: 0.9-2.1ms (1.5ms middle)
+    // Enable clock
+    PMC->PMC_PCR = PMC_PCR_PID(ID_TC0) |
+                   PMC_PCR_CMD |
+                   PMC_PCR_DIV_PERIPH_DIV_MCK |
+                   PMC_PCR_EN;
+    PMC->PCER0 |= ID_TC0;
 
-    // Using PREx = 8, DIVx = 105,
-    // T = (8 * 105) / 84 000 000 = 0.000 01s = 0.01ms
+    // Configure output pin for TC0 TIOA0
+    PIOB->PIO_IDR = PIO_PB25B_TIOA0; // Disable interrupt on pin
+    PIOB->PIO_ABSR |= PIO_PB25B_TIOA0; // Assign pin to peripheral B
+    PIOB->PIO_PDR = PIO_P25B_TIOA0;  // Let peripheral control pin
 
-    // With T=0.01ms we get (2.1 - 0.9) / 0.01 = 120 steps (angles)
+    TC0->TC_CMR0 = TC_CMR_TCCLKS_TIMER_CLOCK2 |
+                   TC_CMR_WAVE |
+                   TC_CMR_WAVSEL_UP_RC |
+                   TC_CMR_ACPA_SET |
+                   TC_CMR_ACPC_CLEAR;
 
-    // Configure output pin for PWMxHI
-    PIOC->PIO_IDR = PIO_PC7B_PWMH2; // Disable interrupt on pin
-    PIOC->PIO_ABSR |= PIO_PC7B_PWMH2; // Assign pin to peripheral B
-    PIOC->PIO_PDR = PIO_PC7B_PWMH2;  // Let peripheral control pin
+    // Reset counter on this value
+    TC0->TC_RC = SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK;
+    // Set neutral position
+    TC0->TC_RA = TC_RA_VALUE(SERVO_NEUTRAL_STEPS);
 
-    // Configure PWM
-    pwm_init_t pwm_cfg = {
-        .prescaler_a = PWM_CLK_PRE_MCK_DIV_8,
-        .clock_divide_factor_a = 105,
-        .prescaler_b = PWM_CLK_PRE_MCK,
-        .clock_divide_factor_b = PWM_CLK_CLKx_OFF, // Clock B not in use; disable
-    };
-    pwm_init(&pwm_cfg);
+    TC0->TC_CCR0 = TC_CCR_CLKEN;
+}
 
-    pwm_channel_mode_t channel_mode = {
-        .channel_prescaler = PWM_CLK_PRE_CLKA, // Use the PWM clock configured above
-        .alignment = PWM_CH_ALIGN_LEFT,
-        .polarity = PWM_CH_POLARITY_LOW,
-        .counter_event_selection = PWM_CH_COUNTER_EVT_END,
-    };
-    pwm_channel_mode_set(SERVO_PWM_CHANNEL, &channel_mode);
-    pwm_channel_period_set(SERVO_PWM_CHANNEL, SERVO_PWM_PERIOD);
-    pwm_channel_duty_cycle_set(SERVO_PWM_CHANNEL, SERVO_NEUTRAL_STEPS);
-    pwm_channels_enable(1 << SERVO_PWM_CHANNEL);
+void servo_position_set(uint16_t position)
+{
+    if (position > SERVO_STEP_COUNT)
+    {
+        return;
+    }
+
+    pwm_channel_duty_cycle_update(SERVO_PWM_CHANNEL, position + SERVO_MIN_STEPS);
 }
