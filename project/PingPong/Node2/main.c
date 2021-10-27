@@ -76,10 +76,10 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 	uart_printf("RX: ");
 	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? (&msg->data) : NULL);
 	
-	if (msg->id->value == CAN_JOYSTICK_MSG_ID && msg->data->len == 2)
+	if (msg->id.value == CAN_JOYSTICK_MSG_ID && msg->data.len == 2)
 	{
 		/* Use the joystick direction values to adjust the servo position */
-		joystick_direction_t x_dir = msg->data->data[0];
+		joystick_direction_t x_dir = msg->data.data[0];
 		if (x_dir == LEFT)
 		{
 			servo_position_adjust(M_JOYSTICK_IMPACT_ON_SERVO);
