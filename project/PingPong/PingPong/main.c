@@ -108,15 +108,15 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
 {
-	_delay_ms(100);
+	_delay_ms(50);
 
 	if (tx_buf_no == M_JOYSTICK_DATA_TXBUF_NO)
 	{
-		m_send_controls_can_msg(M_JOYSTICK_DATA);
+		m_send_controls_can_msg(M_SLIDERS_DATA);
 	}
 	else if (tx_buf_no == M_SLIDERS_DATA_TXBUF_NO)
 	{
-		m_send_controls_can_msg(M_SLIDERS_DATA);
+		m_send_controls_can_msg(M_JOYSTICK_DATA);
 	}
 }
 
