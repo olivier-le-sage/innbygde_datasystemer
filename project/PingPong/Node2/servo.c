@@ -10,6 +10,8 @@
 #define SERVO_NEUTRAL_STEPS ((SERVO_MAX_STEPS + SERVO_MIN_STEPS) / 2)
 // Number of servo positions
 #define SERVO_STEP_COUNT (SERVO_MAX_STEPS - SERVO_MIN_STEPS)
+// Neutral servo position ("absolute")
+#define SERVO_NEUTRAL_POS (SERVO_NEUTRAL_STEPS - SERVO_MIN_STEPS)
 
 // Period for the PWM used for the servo
 #define SERVO_PWM_PERIOD 2000
@@ -19,7 +21,7 @@
 #define TC_RC_VALUE (SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK)
 #define TC_RA_VALUE(_v) (TC_RC_VALUE - (((uint32_t) (_v)) * MCK_8_FACTOR_FOR_TICK))
 
-static uint16_t m_current_servo_position;
+static int16_t m_current_servo_position;
 
 void servo_init(void)
 {
@@ -50,16 +52,16 @@ void servo_init(void)
 
     TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
 
-    m_current_servo_position = SERVO_NEUTRAL_STEPS;
+    m_current_servo_position = SERVO_NEUTRAL_POS;
 }
 
 void servo_position_adjust(int16_t delta)
 {
-    if (((int16_t)m_current_servo_position + delta >= SERVO_MIN_STEPS)
-        && ( (int16_t)m_current_servo_position + delta <= SERVO_MAX_STEPS))
+    if ((m_current_servo_position + SERVO_MIN_STEPS + delta >= SERVO_MIN_STEPS)
+        && ( m_current_servo_position + SERVO_MIN_STEPS + delta <= SERVO_MAX_STEPS))
     {
         m_current_servo_position += delta;
-        TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS + delta);
+        TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE((uint16_t)m_current_servo_position + SERVO_MIN_STEPS);
     }
 }
 
