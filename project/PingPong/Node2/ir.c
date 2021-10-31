@@ -10,7 +10,7 @@
 #include <string.h>
 
 /* Threshold at which the IR is considered blocked. Note: Max 12 bits. */
-#define M_SAMPLE_THRESHOLD (0xFFF/2) // TODO: adjust
+#define M_SAMPLE_THRESHOLD (0xFFF/5) // TODO: adjust
 
 /* Number of consecutive samples required to trigger an interrupt */
 #define M_SAMPLE_NUM_THRESHOLD (2) // cannot be zero
@@ -21,7 +21,7 @@
 
 static uint16_t m_compe_count;
 
-void ADC_IrqHandler(void)
+void ADC_Handler(void)
 {
 	// read out the status register
 	volatile uint32_t interrupt_status = ADC->ADC_ISR;
@@ -41,7 +41,7 @@ void ir_adc_init(void)
 	ADC->ADC_CR |= ADC_CR_START;
 	
 	// Disable ADC write protect
-	ADC->ADC_WPMR = ADC_WPMR_WPKEY_PASSWD | ADC_WPMR_WPEN;
+	ADC->ADC_WPMR = ADC_WPMR_WPKEY_PASSWD;
 
 	// Mode Register settings
 	ADC->ADC_MR |= ADC_MR_PRESCAL(0xFF);
@@ -52,14 +52,16 @@ void ir_adc_init(void)
 	ADC->ADC_MR |= ADC_MR_TRANSFER(1);
 
 	// Configure Extended Mode Register to only generate interrupts when samples are below the threshold
+	ADC->ADC_EMR &= ~ADC_EMR_CMPALL;
 	ADC->ADC_EMR |= ADC_EMR_CMPSEL(M_IR_ADC_CHANNEL);
 	ADC->ADC_EMR |= ADC_EMR_CMPFILTER((M_SAMPLE_NUM_THRESHOLD - 1));
 	ADC->ADC_EMR |= ADC_EMR_CMPMODE_LOW; // Generate an interrupt when data is lower than the threshold
 	ADC->ADC_CWR |= ADC_CWR_LOWTHRES(M_SAMPLE_THRESHOLD);
 	
 	// Enable channel
-	ADC->ADC_CHER |= (1 << M_IR_ADC_CHANNEL); 
-	
+	ADC->ADC_CHDR = 0xFFFFFFFF & ~(1 << M_IR_ADC_CHANNEL); // disable all except the channel we want
+	ADC->ADC_CHER |= (1 << M_IR_ADC_CHANNEL); // only enable the channel we want
+
 	// Configure interrupts
 	ADC->ADC_IER = ADC_IER_COMPE; // Comparison Event
 	NVIC_EnableIRQ(ADC_IRQn);

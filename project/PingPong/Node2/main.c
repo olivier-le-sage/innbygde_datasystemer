@@ -42,16 +42,20 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 		if (id->value == CAN_JOYSTICK_MSG_ID && data->len == 2)
 		{
 			/* Message contains joystick direction, interpret it as such */
+			/*
 			uart_printf("[Joystick Direction] {%s, %s}\n",
 						joystick_dir_to_str((joystick_direction_t)data->data[0]),
 						joystick_dir_to_str((joystick_direction_t)data->data[1]));
+		    */
 		}
 		else if (id->value == CAN_SLIDER_MSG_ID && data->len == 2)
 		{
 			/* Message contains slider position information, interpret it as such. */
+			/*
 			uart_printf("[Slider Position] {%d%%, %d%%}\n",
 					    ((uint32_t)data->data[0]*100)/0xFF,
 					    ((uint32_t)data->data[1]*100)/0xFF);
+			*/
 		}
 		else
 		{
@@ -81,7 +85,7 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 
 static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
-	uart_printf("RX: ");
+	//uart_printf("RX: ");
 	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? (&msg->data) : NULL);
 	
 	if (msg->id.value == CAN_JOYSTICK_MSG_ID && msg->data.len == 2)
@@ -163,6 +167,8 @@ int main(void)
 		/* Poll IR to get the user score. */
 		m_current_game_score = ir_blocked_count_get();
 		uart_printf("< Current score: %d >\n", m_current_game_score);
-		_delay_ms(100);
+		_delay_us(100);
+		
+		volatile uint32_t lcdr = ADC->ADC_LCDR;
     }
 }
