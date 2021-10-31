@@ -24,8 +24,8 @@ static uint16_t m_compe_count;
 void ADC_IrqHandler(void)
 {
 	// read out the status register
-	uint32_t interrupt_status =	ADC->ADC_ISR;
-	
+	volatile uint32_t interrupt_status = ADC->ADC_ISR;
+
 	if (interrupt_status & ADC_ISR_COMPE)
 	{
 		m_compe_count++;
