@@ -13,7 +13,7 @@
 #define M_SAMPLE_THRESHOLD (0xFFF/5) // TODO: adjust
 
 /* Number of consecutive samples required to trigger an interrupt */
-#define M_SAMPLE_NUM_THRESHOLD (2) // cannot be zero
+#define M_SAMPLE_NUM_THRESHOLD 1 // cannot be zero
 
 /* ADC channel used for the IR */
 #define M_NUM_CHANNELS   (1)
@@ -37,27 +37,38 @@ void ir_adc_init(void)
 	// reset internal state
 	m_compe_count = 0;
 
+	PMC->PMC_PCR = PMC_PCR_PID(ID_ADC) |
+				   PMC_PCR_CMD |
+				   PMC_PCR_DIV_PERIPH_DIV_MCK |
+				   PMC_PCR_EN;
+    PMC->PMC_PCER1 |= (uint32_t) (32 - ID_ADC);
+
 	// reset ADC
-	ADC->ADC_CR |= ADC_CR_START;
+	ADC->ADC_CR |= ADC_CR_SWRST;
 	
 	// Disable ADC write protect
 	ADC->ADC_WPMR = ADC_WPMR_WPKEY_PASSWD;
 
 	// Mode Register settings
-	ADC->ADC_MR |= ADC_MR_PRESCAL(0xFF);
-	ADC->ADC_MR |= ADC_MR_STARTUP_SUT512;
-	ADC->ADC_MR |= ADC_MR_SETTLING_AST17;
-	ADC->ADC_MR |= ADC_MR_ANACH_NONE;
-	ADC->ADC_MR |= ADC_MR_TRACKTIM(0);
-	ADC->ADC_MR |= ADC_MR_TRANSFER(1);
+	ADC->ADC_MR = ADC_MR_TRGEN_DIS
+				| ADC_MR_SLEEP_NORMAL
+				| ADC_MR_FWUP_OFF
+				| ADC_MR_PRESCAL(0xFF)
+				| ADC_MR_STARTUP_SUT512
+	            | ADC_MR_SETTLING_AST17
+	            | ADC_MR_ANACH_NONE
+	            | ADC_MR_TRACKTIM(0)
+	            | ADC_MR_TRANSFER(1)
+				| ADC_MR_USEQ_NUM_ORDER;
 
 	// Configure Extended Mode Register to only generate interrupts when samples are below the threshold
-	ADC->ADC_EMR &= ~ADC_EMR_CMPALL;
-	ADC->ADC_EMR |= ADC_EMR_CMPSEL(M_IR_ADC_CHANNEL);
-	ADC->ADC_EMR |= ADC_EMR_CMPFILTER((M_SAMPLE_NUM_THRESHOLD - 1));
-	ADC->ADC_EMR |= ADC_EMR_CMPMODE_LOW; // Generate an interrupt when data is lower than the threshold
-	ADC->ADC_CWR |= ADC_CWR_LOWTHRES(M_SAMPLE_THRESHOLD);
-	
+	ADC->ADC_EMR = ADC_EMR_CMPMODE_LOW // Generate an interrupt when data is lower than the threshold
+				 | ADC_EMR_CMPSEL(M_IR_ADC_CHANNEL)
+				 | ADC_EMR_CMPFILTER(0);
+				 // | ADC_EMR_CMPFILTER(M_SAMPLE_NUM_THRESHOLD);
+
+	ADC->ADC_CWR = ADC_CWR_LOWTHRES(M_SAMPLE_THRESHOLD);
+
 	// Enable channel
 	ADC->ADC_CHDR = 0xFFFFFFFF & ~(1 << M_IR_ADC_CHANNEL); // disable all except the channel we want
 	ADC->ADC_CHER |= (1 << M_IR_ADC_CHANNEL); // only enable the channel we want
@@ -68,6 +79,8 @@ void ir_adc_init(void)
 	
 	// Start ADC
 	ADC->ADC_MR |= ADC_MR_FREERUN_ON; // free-running -> will never stop
+	
+	ADC->ADC_CR |= ADC_CR_START;
 }
 
 uint16_t ir_blocked_count_get(void)

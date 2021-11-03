@@ -168,7 +168,5 @@ int main(void)
 		m_current_game_score = ir_blocked_count_get();
 		uart_printf("< Current score: %d >\n", m_current_game_score);
 		_delay_us(100);
-		
-		volatile uint32_t lcdr = ADC->ADC_LCDR;
     }
 }
