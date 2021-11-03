@@ -8,8 +8,8 @@
 #include "ir.h"
 #include <sam3x8e.h>
 #include <string.h>
+#include <stdbool.h>
 
-#include "timer.h"
 
 /* Threshold at which the IR is considered blocked. Note: Max 12 bits. */
 #define M_SAMPLE_THRESHOLD (0xFFF/5) // TODO: adjust
@@ -23,8 +23,14 @@
 #define M_NUM_CHANNELS   (1)
 #define M_IR_ADC_CHANNEL (0)
 
-static uint32_t m_last_timestamp;
-static uint16_t m_compe_count;
+static uint32_t m_compe_count;
+
+
+bool hacky_cooldown_timer(void)
+{
+	// Read overflow status of servo timer (clears on read)
+	return TC0->TC_CHANNEL[0].TC_SR & TC_SR_CPCS;
+}
 
 void ADC_Handler(void)
 {
@@ -33,10 +39,9 @@ void ADC_Handler(void)
 
 	if (interrupt_status & ADC_ISR_COMPE)
 	{
-		uint32_t timestamp = timer_ms_get();
-		if (timestamp - m_last_timestamp > M_EVENT_MIN_PERIOD)
+		if (hacky_cooldown_timer())
 		{
-			m_compe_count++;
+			m_compe_count++;	
 		}
 	}
 }
@@ -45,7 +50,6 @@ void ir_adc_init(void)
 {
 	// reset internal state
 	m_compe_count = 0;
-	m_last_timestamp = 0;
 
 	PMC->PMC_PCR = PMC_PCR_PID(ID_ADC) |
 				   PMC_PCR_CMD |
@@ -77,7 +81,8 @@ void ir_adc_init(void)
 				 | ADC_EMR_CMPFILTER(0);
 				 // | ADC_EMR_CMPFILTER(M_SAMPLE_NUM_THRESHOLD);
 
-	ADC->ADC_CWR = ADC_CWR_LOWTHRES(M_SAMPLE_THRESHOLD);
+	// ADC->ADC_CWR = ADC_CWR_LOWTHRES(M_SAMPLE_THRESHOLD);
+	ADC->ADC_CWR = ADC_CWR_HIGHTHRES(0xFFF) | ADC_CWR_LOWTHRES(M_SAMPLE_THRESHOLD);
 
 	// Enable channel
 	ADC->ADC_CHDR = 0xFFFFFFFF & ~(1 << M_IR_ADC_CHANNEL); // disable all except the channel we want
@@ -93,9 +98,14 @@ void ir_adc_init(void)
 	ADC->ADC_CR |= ADC_CR_START;
 }
 
-uint16_t ir_blocked_count_get(void)
+uint32_t ir_blocked_count_get(void)
 {
 	return m_compe_count;
+}
+
+void ir_blocked_count_reset(void)
+{
+	m_compe_count = 0;
 }
 
 ir_state_t ir_state_get(void)

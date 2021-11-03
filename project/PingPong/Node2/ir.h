@@ -17,7 +17,8 @@ typedef enum
 } ir_state_t;
 
 void ir_adc_init(void);
-uint16_t ir_blocked_count_get(void);
+uint32_t ir_blocked_count_get(void);
 ir_state_t ir_state_get(void);
+void ir_blocked_count_reset(void);
 
 #endif /* IR_H_ */
