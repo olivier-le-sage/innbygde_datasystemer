@@ -9,16 +9,21 @@
 #include <sam3x8e.h>
 #include <string.h>
 
+#include "timer.h"
+
 /* Threshold at which the IR is considered blocked. Note: Max 12 bits. */
 #define M_SAMPLE_THRESHOLD (0xFFF/5) // TODO: adjust
 
 /* Number of consecutive samples required to trigger an interrupt */
 #define M_SAMPLE_NUM_THRESHOLD 1 // cannot be zero
 
+#define M_EVENT_MIN_PERIOD 500
+
 /* ADC channel used for the IR */
 #define M_NUM_CHANNELS   (1)
 #define M_IR_ADC_CHANNEL (0)
 
+static uint32_t m_last_timestamp;
 static uint16_t m_compe_count;
 
 void ADC_Handler(void)
@@ -28,7 +33,11 @@ void ADC_Handler(void)
 
 	if (interrupt_status & ADC_ISR_COMPE)
 	{
-		m_compe_count++;
+		uint32_t timestamp = timer_ms_get();
+		if (timestamp - m_last_timestamp > M_EVENT_MIN_PERIOD)
+		{
+			m_compe_count++;
+		}
 	}
 }
 
@@ -36,6 +45,7 @@ void ir_adc_init(void)
 {
 	// reset internal state
 	m_compe_count = 0;
+	m_last_timestamp = 0;
 
 	PMC->PMC_PCR = PMC_PCR_PID(ID_ADC) |
 				   PMC_PCR_CMD |

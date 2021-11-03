@@ -15,6 +15,7 @@
 #include "servo.h"
 #include "ir.h"
 #include "CAN.h"
+#include "timer.h"
 
 /* Approximative delay routines for 84MHz */
 #define _delay_us(time_us) {for (uint32_t i = 0; i < (84*time_us); i++){asm ("nop");}}
@@ -159,7 +160,10 @@ int main(void)
 	uart_init();
 	ir_adc_init();
 	servo_init();
+	timer_init();
 	m_can_init();
+
+	timer_start();
 
     /* Replace with your application code */
     while (1)
