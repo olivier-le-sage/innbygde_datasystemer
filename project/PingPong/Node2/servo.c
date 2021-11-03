@@ -13,6 +13,8 @@
 // Neutral servo position ("absolute")
 #define SERVO_NEUTRAL_POS (SERVO_NEUTRAL_STEPS - SERVO_MIN_STEPS)
 
+#define SERVO_TARGET_POS_INVALID INT16_MAX
+
 // Period for the PWM used for the servo
 #define SERVO_PWM_PERIOD 2000
 
@@ -21,7 +23,32 @@
 #define TC_RC_VALUE (SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK)
 #define TC_RA_VALUE(_v) (TC_RC_VALUE - (((uint32_t) (_v)) * MCK_8_FACTOR_FOR_TICK))
 
-static int16_t m_current_servo_position;
+static volatile int16_t m_current_servo_position;
+static volatile int16_t m_target_servo_position = SERVO_TARGET_POS_INVALID;
+
+void TC0_Handler(void)
+{
+    uint32_t status = TC0->TC_CHANNEL[0].TC_SR;
+    if (status & TC_SR_CPCS &&
+        m_target_servo_position != SERVO_TARGET_POS_INVALID)
+    {
+        if (m_current_servo_position < m_target_servo_position)
+        {
+            m_current_servo_position++;
+            TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position);
+        }
+        else if (m_current_servo_position > m_target_servo_position)
+        {
+            m_current_servo_position--;
+            TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position);
+        }
+        else
+        {
+            m_target_servo_position = SERVO_TARGET_POS_INVALID;
+            TC0->TC_CHANNEL[0].TC_IDR = TC_IDR_CPCS;
+        }
+    }
+}
 
 void servo_init(void)
 {
@@ -52,6 +79,8 @@ void servo_init(void)
 
     TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
 
+    NVIC_EnableIRQ(TC0_IRQn);
+
     m_current_servo_position = SERVO_NEUTRAL_POS;
 }
 
@@ -63,6 +92,27 @@ void servo_position_adjust(int16_t delta)
         m_current_servo_position += delta;
         TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE((uint16_t)m_current_servo_position + SERVO_MIN_STEPS);
     }
+}
+
+void servo_position_goto(uint16_t position)
+{
+    if (position >= SERVO_STEP_COUNT)
+    {
+        return;
+    }
+
+    NVIC_DisableIRQ(TC0_IRQn);
+    m_target_servo_position = position;
+    TC0->TC_CHANNEL[0].TC_IER = TC_IER_CPCS;
+    NVIC_EnableIRQ(TC0_IRQn);
+}
+
+void servo_position_stop(void)
+{
+    NVIC_DisableIRQ(TC0_IRQn);
+    m_target_servo_position = SERVO_TARGET_POS_INVALID;
+    TC0->TC_CHANNEL[0].TC_IDR = TC_IDR_CPCS;
+    NVIC_EnableIRQ(TC0_IRQn);
 }
 
 void servo_position_set(uint16_t position)
