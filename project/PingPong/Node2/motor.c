@@ -1,6 +1,8 @@
 #include "motor.h"
 #include "sam.h"
 
+#include <stdbool.h>
+
 
 // DACC uses MCK/2 as clock
 // Conversion -> output uses 25 clock periods
@@ -9,12 +11,17 @@
 // Write USER_SEL in DACC_MODE to set channel
 // Must configure refresh to periodically refresh output signal
 
-static void 
-
+static bool dacc_value_write(uint16_t value)
+{
+    if (DACC->DACC_ISR & DACC_ISR_TXRDY)
+    {
+        DACC->DACC_CDR = (uint32_t) value;
+    }
+}
 
 void DACC_IRQHandler(void)
 {
-    uint32_t status = DACC->ISR;
+    uint32_t status = DACC->DACC_ISR;
 
     if (status & DACC_ISR_TXRDY)
     {
@@ -38,7 +45,7 @@ void motor_init(void)
     DACC->DACC_CR = DACC_CR_SWRST;  // Reset DACC
     DACC->DACC_MR = DACC_MR_TRGEN_DIS |  // Use free-running mode (?)
                     // DAC_MR_TRGSEL(<val>) | 
-                    DACC_MR_WORD_WORD |  // Use word mode
+                    DACC_MR_WORD_HALF |  // Use half-word mode (could maybe use word mode)
                     DACC_MR_REFRESH(128) |  // Refresh every 1024 * x / (MCK / 2) cycles (tune)
                     DACC_MR_USER_SEL_CHANNEL0 |  // Use channel 0
                     DACC_MR_TAG_DIS |  // Don't use tag mode
@@ -51,4 +58,14 @@ void motor_init(void)
     DACC->DACC_IER = DACC_IER_TXRDY;
 
     NVIC_EnableIRQ(DACC_IRQn);
+}
+
+void motor_pos_set(uint16_t pos)
+{
+    if (pos > MOTOR_POS_MAX)
+    {
+        return;
+    }
+
+    dacc_value_write(pos);
 }
