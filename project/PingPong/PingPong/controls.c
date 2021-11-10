@@ -12,9 +12,12 @@
 #include <util/delay.h>
 #include "ext_peripherals.h"
 
+#define CLOCK_SOURCE_MASK (_BV(CS30) | _BV(CS31) | _BV(CS32))
+
 #define M_ADC_ADDRESS     (0x1400)
 #define M_MCU_RC_OSC_FREQ (8000000)
 #define M_ADC_CLK_FREQ    (1000000)  /* Allowed frequencies: 0.5MHz to 5MHz */
+// FIXME: check if this should be lower to reduce power consumption
 #define M_ADC_CLK_DIV     (0b001)    /* prescaler setting for clk/1 */
 #define M_ADC_CLK_PIN     (_BV(PD4)) /* PWM will be output on PD4 */
 
@@ -74,9 +77,8 @@ bool joystick_init(void)
 	 *   - toggle OC3A on compare match
 	 *   - clock divided by 1
 	 */
-	const uint8_t clock_source_mask = _BV(CS30) | _BV(CS31) | _BV(CS32);
 	TCCR3A = _BV(WGM30) | _BV(COM3A0);
-	TCCR3B = _BV(WGM33) | (clock_source_mask & M_ADC_CLK_DIV);
+	TCCR3B = _BV(WGM33) | (CLOCK_SOURCE_MASK & M_ADC_CLK_DIV);
 	
 	// Output compare match must be at least one
 	OCR3A = 1; // NB: We have found experimentally that this produces ~600 KHz.
@@ -97,6 +99,7 @@ void get_joystick_pos(joystick_position_t *p_joystick_position_out)
 	p_joystick_position_out->y = m_convert_voltage_to_angle(adc_channels[1]);
 }
 
+// FIXME: should sample joystick/sliders all at once to reduce time/energy
 void get_joystick_dir(joystick_direction_t *p_first_dir_out, joystick_direction_t *p_second_dir_out)
 {
 	joystick_position_t joystick_analog_position;
@@ -140,4 +143,16 @@ void get_sliders_pos(sliders_position_t *p_slider_position_out)
 	
 	p_slider_position_out->right_slider_pos = adc_channels[2];
 	p_slider_position_out->left_slider_pos  = adc_channels[3];
+}
+
+void joystick_sleep(void)
+{
+	// Turn off clock to the ADC
+	TCCR3B &= CLOCK_SOURCE_MASK;
+}
+
+void joystick_wake(void)
+{
+	// Turn on clock to the ADC
+	TCCR3B |= (CLOCK_SOURCE_MASK & M_ADC_CLK_DIV);
 }

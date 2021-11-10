@@ -62,5 +62,7 @@ bool joystick_init(void);
 void get_joystick_pos(joystick_position_t *p_joystick_position_out);
 void get_joystick_dir(joystick_direction_t *p_first_dir_out, joystick_direction_t *p_second_dir_out);
 void get_sliders_pos(sliders_position_t *p_sliders_position_out);
+void joystick_sleep(void);
+void joystick_wake(void);
 
 #endif /* JOYSTICK_H_ */
