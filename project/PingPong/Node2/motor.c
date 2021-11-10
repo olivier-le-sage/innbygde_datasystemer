@@ -11,7 +11,7 @@
 // Write USER_SEL in DACC_MODE to set channel
 // Must configure refresh to periodically refresh output signal
 
-static bool dacc_value_write(uint16_t value)
+static void m_dacc_value_write(uint16_t value)
 {
     if (DACC->DACC_ISR & DACC_ISR_TXRDY)
     {
@@ -44,7 +44,7 @@ void motor_init(void)
     // TODO: configure DACC
     DACC->DACC_CR = DACC_CR_SWRST;  // Reset DACC
     DACC->DACC_MR = DACC_MR_TRGEN_DIS |  // Use free-running mode (?)
-                    // DAC_MR_TRGSEL(<val>) | 
+                    // DAC_MR_TRGSEL(<val>) |
                     DACC_MR_WORD_HALF |  // Use half-word mode (could maybe use word mode)
                     DACC_MR_REFRESH(128) |  // Refresh every 1024 * x / (MCK / 2) cycles (tune)
                     DACC_MR_USER_SEL_CHANNEL0 |  // Use channel 0
@@ -67,5 +67,5 @@ void motor_pos_set(uint16_t pos)
         return;
     }
 
-    dacc_value_write(pos);
+    m_dacc_value_write(pos);
 }
