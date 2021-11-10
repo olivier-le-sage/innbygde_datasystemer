@@ -3,7 +3,7 @@
  *
  * Created: 27.10.2021 17:52:36
  *  Author: oliviel
- */ 
+ */
 
 #include "ir.h"
 #include <sam3x8e.h>
@@ -12,7 +12,7 @@
 
 
 /* Threshold at which the IR is considered blocked. Note: Max 12 bits. */
-#define M_SAMPLE_THRESHOLD (0xFFF/5) // TODO: adjust
+#define M_SAMPLE_THRESHOLD (0xFFF/10)
 
 /* Number of consecutive samples required to trigger an interrupt */
 #define M_SAMPLE_NUM_THRESHOLD 1 // cannot be zero
@@ -41,7 +41,7 @@ void ADC_Handler(void)
 	{
 		if (hacky_cooldown_timer())
 		{
-			m_compe_count++;	
+			m_compe_count++;
 		}
 	}
 }
@@ -59,7 +59,7 @@ void ir_adc_init(void)
 
 	// reset ADC
 	ADC->ADC_CR |= ADC_CR_SWRST;
-	
+
 	// Disable ADC write protect
 	ADC->ADC_WPMR = ADC_WPMR_WPKEY_PASSWD;
 
@@ -91,10 +91,10 @@ void ir_adc_init(void)
 	// Configure interrupts
 	ADC->ADC_IER = ADC_IER_COMPE; // Comparison Event
 	NVIC_EnableIRQ(ADC_IRQn);
-	
+
 	// Start ADC
 	ADC->ADC_MR |= ADC_MR_FREERUN_ON; // free-running -> will never stop
-	
+
 	ADC->ADC_CR |= ADC_CR_START;
 }
 
@@ -109,7 +109,7 @@ void ir_blocked_count_reset(void)
 }
 
 ir_state_t ir_state_get(void)
-{	
+{
 	if (m_compe_count)
 	{
 		return M_BLOCKED;
