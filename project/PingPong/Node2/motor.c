@@ -6,11 +6,11 @@
 #include <stdint.h>
 
 // Parameters for the PID controller. TODO: tune
-// The representation used is fixed-point with a shift of 7
+// The representation used is fixed-point with a shift of 7 (so 2^7 = 128 = 1)
 #define M_FIXED_POINT_SHIFT 7
-#define K_P 128 // = 1
-#define K_I 64  // = 0.5
-#define K_D 64  // = 0.5
+#define K_P 1  // = 0.0078125
+#define K_I 0  // = 0
+#define K_D 0  // = 0.0078125
 
 #define PID_MAX_SUM_ERROR (INT32_MAX / (K_P + 1))
 #define PID_MAX_ERROR     (INT32_MAX / (K_I + 1))
@@ -26,16 +26,16 @@ typedef struct
 
 static m_motor_pid_controller_t pid_state;
 
-uint32_t m_pid_controller_next_value(void)
+int32_t m_pid_controller_next_value(void)
 {
-    uint32_t p_term;
-    uint32_t i_term;
-    uint32_t d_term;
+    int32_t p_term;
+    int32_t i_term;
+    int32_t d_term;
     int32_t error;
     int32_t temp_sum_error;
-    int32_t next_value;
+    int32_t next_adjust;
 
-    error = (pid_state.motor_target_pos - pid_state.motor_current_pos) << M_FIXED_POINT_SHIFT;
+    error = (pid_state.motor_target_pos - pid_state.motor_current_pos);
 
     // use the error to find the next value
     if (error > PID_MAX_ERROR)
@@ -74,20 +74,18 @@ uint32_t m_pid_controller_next_value(void)
     // Shift down to convert back from fixed-point numbers
     // This should work even if the terms are somehow negative,
     //   because negative numbers are represented in 2's complement on ARM
-    next_value = (p_term + i_term + d_term) >> M_FIXED_POINT_SHIFT;
+    next_adjust = (p_term + i_term + d_term) >> M_FIXED_POINT_SHIFT;
 
-    if (next_value > MOTOR_POS_MAX)
+    if (next_adjust > MOTOR_POS_MAX)
     {
-        next_value = MOTOR_POS_MAX;
+        next_adjust = MOTOR_POS_MAX;
     }
-    else if (next_value < MOTOR_POS_MIN)
+    else if (next_adjust < MOTOR_POS_MIN)
     {
-        next_value = MOTOR_POS_MIN;
+        next_adjust = MOTOR_POS_MIN;
     }
 
-    pid_state.motor_current_pos = (uint16_t)next_value;
-
-    return next_value;
+    return next_adjust;
 }
 
 void m_reset_pid_controller(void)
@@ -113,7 +111,9 @@ void DACC_Handler(void)
 
     if ((status & DACC_ISR_EOC) && (status & DACC_ISR_TXRDY))
     {
-        m_dacc_value_write(m_pid_controller_next_value());
+		int32_t pid_adjust = m_pid_controller_next_value();
+		pid_state.motor_current_pos += pid_adjust;
+        m_dacc_value_write(pid_state.motor_current_pos);
     }
 }
 
@@ -158,6 +158,9 @@ void motor_pos_set(uint16_t pos)
         return;
     }
 
-    pid_state.motor_target_pos = pos;
-	  m_dacc_value_write(m_pid_controller_next_value());
+	pid_state.motor_target_pos = pos;
+
+    int32_t pid_adjust = m_pid_controller_next_value();
+    pid_state.motor_current_pos += pid_adjust;
+    m_dacc_value_write(pid_state.motor_current_pos);
 }

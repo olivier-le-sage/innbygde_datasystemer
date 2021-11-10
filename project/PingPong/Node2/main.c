@@ -106,7 +106,7 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 		{
 			servo_position_stop();
 		}
-	} 
+	}
 }
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
@@ -181,12 +181,7 @@ int main(void)
 		}
 
 		uart_printf("< Current score: %d >\n", m_current_game_score);
-		
 		_delay_ms(500);
-		_delay_ms(500);
-		motor_pos_set(MOTOR_POS_MAX);
-		_delay_ms(500);
-		_delay_ms(500);
-		motor_pos_set(MOTOR_POS_MIN);
+		motor_pos_set(MOTOR_POS_MAX/2 + MOTOR_POS_MAX/3);
     }
 }
