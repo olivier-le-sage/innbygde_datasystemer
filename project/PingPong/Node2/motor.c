@@ -5,69 +5,76 @@
 #include <string.h>
 #include <stdint.h>
 
-// Parameters for the PI controller. TODO: tune
+// Parameters for the PID controller. TODO: tune
 // The representation used is fixed-point with a shift of 7
 #define M_FIXED_POINT_SHIFT 7
 #define K_P 128 // = 1
 #define K_I 64  // = 0.5
+#define K_D 64  // = 0.5
 
-#define PI_MAX_SUM_ERROR (INT32_MAX / (K_P + 1))
-#define PI_MAX_ERROR     (INT32_MAX / (K_I + 1))
-#define PI_MAX_I_TERM    (INT32_MAX / 2)
+#define PID_MAX_SUM_ERROR (INT32_MAX / (K_P + 1))
+#define PID_MAX_ERROR     (INT32_MAX / (K_I + 1))
+#define PID_MAX_I_TERM    (INT32_MAX / 2)
 
 typedef struct
 {
-    int32_t  pi_controller_sum_error;
+    int32_t  pid_controller_sum_error;
     uint32_t motor_target_pos;
     uint32_t motor_current_pos;
-} m_motor_pi_controller_t;
+    uint32_t motor_last_pos;
+} m_motor_pid_controller_t;
 
-static m_motor_pi_controller_t pi_state;
+static m_motor_pid_controller_t pid_state;
 
-uint32_t m_pi_controller_next_value(void)
+uint32_t m_pis_controller_next_value(void)
 {
     uint32_t p_term;
     uint32_t i_term;
+    uint32_t d_term;
     int32_t error;
     int32_t temp_sum_error;
     int32_t next_value;
 
-    error = pi_state.motor_target_pos - pi_state.motor_current_pos;
+    error = pid_state.motor_target_pos - pid_state.motor_current_pos;
 
     // use the error to find the next value
-    if (error > PI_MAX_ERROR)
+    if (error > PID_MAX_ERROR)
     {
-        error = PI_MAX_ERROR;
+        error = PID_MAX_ERROR;
     }
-    else if (error < -PI_MAX_ERROR)
+    else if (error < -PID_MAX_ERROR)
     {
-        error = -PI_MAX_ERROR;
+        error = -PID_MAX_ERROR;
     }
 
     p_term = K_P * error;
 
-    temp_sum_error = pi_state.pi_controller_sum_error + error;
-    if (temp_sum_error > PI_MAX_SUM_ERROR)
+    temp_sum_error = pid_state.pid_controller_sum_error + error;
+    if (temp_sum_error > PID_MAX_SUM_ERROR)
     {
-        i_term = PI_MAX_I_TERM;
-        pi_state.pi_controller_sum_error = PI_MAX_SUM_ERROR;
+        i_term = PID_MAX_I_TERM;
+        pid_state.pid_controller_sum_error = PID_MAX_SUM_ERROR;
     }
     else if (temp_sum_error < -PI_MAX_SUM_ERROR)
     {
-        i_term = -PI_MAX_I_TERM;
-        pi_state.pi_controller_sum_error = -PI_MAX_SUM_ERROR;
+        i_term = -PID_MAX_I_TERM;
+        pid_state.pid_controller_sum_error = -PID_MAX_SUM_ERROR;
     }
     else
     {
-        i_term = K_I * pi_state.pi_controller_sum_error;
-        pi_state.pi_controller_sum_error = temp_sum_error;
+        i_term = K_I * pid_state.pid_controller_sum_error;
+        pid_state.pid_controller_sum_error = temp_sum_error;
     }
+
+    d_term = K_D * (pid_state.motor_current_pos - pid_state.motor_last_pos);
+
+    pid_state.motor_last_pos = motor_current_pos;
 
     // Sum the P and I terms to obtain the output
     // Shift down to convert back from fixed-point numbers
     // This should work even if the terms are somehow negative,
     //   because negative numbers are represented in 2's complement on ARM
-    next_value = (p_term + i_term) >> M_FIXED_POINT_SHIFT;
+    next_value = (p_term + i_term + d_term) >> M_FIXED_POINT_SHIFT;
 
     if (next_value > MOTOR_POS_MAX)
     {
@@ -78,14 +85,14 @@ uint32_t m_pi_controller_next_value(void)
         next_value = MOTOR_POS_MIN;
     }
 
-    pi_state.motor_current_pos = (uint16_t)next_value;
+    pid_state.motor_current_pos = (uint16_t)next_value;
 
     return next_value;
 }
 
-void m_reset_pi_controller(void)
+void m_reset_pid_controller(void)
 {
-    memset(&pi_state, 0, sizeof(m_motor_pi_controller_t));
+    memset(&pid_state, 0, sizeof(m_motor_pid_controller_t));
 }
 
 // DACC uses MCK/2 as clock
@@ -106,7 +113,7 @@ void DACC_Handler(void)
 
     if ((status & DACC_ISR_EOC) && (status & DACC_ISR_TXRDY))
     {
-        m_dacc_value_write(m_pi_controller_next_value());
+        m_dacc_value_write(m_pid_controller_next_value());
     }
 }
 
@@ -141,7 +148,7 @@ void motor_init(void)
 
     NVIC_EnableIRQ(DACC_IRQn);
 
-    m_reset_pi_controller();
+    m_reset_pid_controller();
 	m_dacc_value_write(0);
 }
 
@@ -152,5 +159,5 @@ void motor_pos_set(uint16_t pos)
         return;
     }
 
-    pi_state.motor_target_pos = pos;
+    pid_state.motor_target_pos = pos;
 }
