@@ -178,13 +178,5 @@ int main(void)
 
 		uart_printf("< Current score: %d >\n", m_current_game_score);
 		_delay_ms(500);
-
-		// motor testing code
-		motor_pos_set(MOTOR_POS_MIN);
-		_delay_ms(500);
-		motor_pos_set(MOTOR_POS_MAX / 2);
-		_delay_ms(500);
-		motor_pos_set(MOTOR_POS_MAX);
-		_delay_ms(500);
     }
 }
