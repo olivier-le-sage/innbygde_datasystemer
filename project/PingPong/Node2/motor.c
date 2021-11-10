@@ -3,24 +3,21 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 
 // Parameters for the PI controller. TODO: tune
-// The representation used is fixed-point with a shift of 5
-#define K_P 32 // = 1
-#define K_I 16 // = 0.5
+// The representation used is fixed-point with a shift of 7
+#define M_FIXED_POINT_SHIFT 7
+#define K_P 128 // = 1
+#define K_I 64 // = 0.5
 
 #define PI_MAX_SUM_ERROR (INT32_MAX / (K_P + 1))
 #define PI_MAX_ERROR     (INT32_MAX / (K_I + 1))
-#define PI_MAX_I_TERM    (0)
-static int32_t m_pi_controller_sum_error;
-static int32_t m_pi_controller_error;
-static uint32_t m_motor_target_pos;
-static uint32_t m_motor_current_pos;
+#define PI_MAX_I_TERM    (INT32_MAX / 2)
 
 typedef struct
 {
     int32_t  pi_controller_sum_error;
-    int32_t  pi_controller_error;
     uint32_t motor_target_pos;
     uint32_t motor_current_pos;
 } m_motor_pi_controller_t;
@@ -57,20 +54,20 @@ uint16_t m_pi_controller_next_value(void)
     }
     else if (temp_sum_error < -PI_MAX_SUM_ERROR)
     {
-        i_term = -MAX_I_TERM;
+        i_term = -PI_MAX_I_TERM;
         pi_state.pi_controller_sum_error = -PI_MAX_SUM_ERROR;
     }
     else
     {
         i_term = K_I * m_pi_controller_sum_error;
-        pi_state.pi_controller_sum_error = temp;
+        pi_state.pi_controller_sum_error = temp_sum_error;
     }
 
     // Sum the P and I terms to obtain the output
     // Shift down to convert back from fixed-point numbers
     // This should work even if the terms are somehow negative, 
     //   because negative numbers are represented in 2's complement on ARM
-    next_value = (p_term + i_term) >> 5;
+    next_value = (p_term + i_term) >> M_FIXED_POINT_SHIFT;
 
     if (next_value > MOTOR_POS_MAX)
     {
