@@ -57,7 +57,7 @@ void servo_init(void)
                    PMC_PCR_CMD |
                    PMC_PCR_DIV_PERIPH_DIV_MCK |
                    PMC_PCR_EN;
-    PMC->PMC_PCER0 |= ID_TC0;
+    PMC->PMC_PCER0 |= (uint32_t) (1 << ID_TC0);
 
 	TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKDIS;
 
