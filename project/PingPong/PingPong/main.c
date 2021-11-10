@@ -46,13 +46,13 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 		}
 		// For some reason printing the whole thing in one does not work
 		// (maybe printf buffer size or something)
-		printf("[D] {ext: %u, id: %d, len: %u, data: [", (uint32_t)id->extended, (int)id->value, (uint32_t)data->len);
+		printf("[D] {ext: %u, id: %d, len: %u, data: [", (int)id->extended, (int)id->value, (int)data->len);
 		printf("%s", &data_str[0]);
 		printf("] }\n");
 	}
 	else
 	{
-		printf("[R] {ext: %u, id: %d }\n", (uint32_t)id->extended, (int)id->value);
+		printf("[R] {ext: %u, id: %d }\n", (int)id->extended, (int)id->value);
 	}
 }
 
@@ -70,7 +70,7 @@ static void m_send_controls_can_msg(bool data_type)
 		joystick_msg_data[1] = (uint8_t)m_y_dir;
 		joystick_data.len = sizeof(joystick_msg_data);
 		joystick_data.data = joystick_msg_data;
-		joystick_data_id.value = 0xF;
+		joystick_data_id.value = CAN_JOYSTICK_MSG_ID;
 		joystick_data_id.extended = false;
 
 		// Use TX buffer 0 to send joystick direction
@@ -87,7 +87,7 @@ static void m_send_controls_can_msg(bool data_type)
 		sliders_msg_data[1]  = (uint8_t)m_sliders.left_slider_pos;
 		sliders_data.len = sizeof(sliders_msg_data);
 		sliders_data.data = sliders_msg_data;
-		sliders_data_id.value = 0xE;
+		sliders_data_id.value = CAN_SLIDER_MSG_ID;
 		sliders_data_id.extended = false;
 
 		// Use TX buffer 1 to send slider information
@@ -108,15 +108,15 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
 {
-	_delay_ms(100);
+	_delay_ms(50);
 
 	if (tx_buf_no == M_JOYSTICK_DATA_TXBUF_NO)
 	{
-		m_send_controls_can_msg(M_JOYSTICK_DATA);
+		m_send_controls_can_msg(M_SLIDERS_DATA);
 	}
 	else if (tx_buf_no == M_SLIDERS_DATA_TXBUF_NO)
 	{
-		m_send_controls_can_msg(M_SLIDERS_DATA);
+		m_send_controls_can_msg(M_JOYSTICK_DATA);
 	}
 }
 

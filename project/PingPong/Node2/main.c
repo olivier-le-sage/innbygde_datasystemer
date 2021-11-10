@@ -12,7 +12,19 @@
 #include "sam.h"
 #include "uart.h"
 #include "controls.h"
+#include "servo.h"
+#include "ir.h"
 #include "CAN.h"
+
+/* Approximative delay routines for 84MHz */
+#define _delay_us(time_us) {for (uint32_t i = 0; i < (12*time_us); i++){asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");}}
+#define _delay_ms(time_ms) _delay_us((time_ms*1000))
+
+/* TODO: Fine-tune this value for an enhanced user experience */
+#define M_JOYSTICK_IMPACT_ON_SERVO (20)
+
+/* Goals are registered when the IR beam is blocked. 1 block = 1 point */
+static uint32_t m_current_game_score;
 
 static void m_format_hex_byte(char * out, uint8_t value)
 {
@@ -27,19 +39,23 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 {
 	if (data)
 	{
-		if (id->value == 0xF && data->len == 2)
+		if (id->value == CAN_JOYSTICK_MSG_ID && data->len == 2)
 		{
 			/* Message contains joystick direction, interpret it as such */
+			/*
 			uart_printf("[Joystick Direction] {%s, %s}\n",
 						joystick_dir_to_str((joystick_direction_t)data->data[0]),
 						joystick_dir_to_str((joystick_direction_t)data->data[1]));
+		    */
 		}
-		else if (id->value == 0xE && data->len == 2)
-		{
+		else if (id->value == CAN_SLIDER_MSG_ID && data->len == 2)
+		{                                                                                                                                                                                                                       
 			/* Message contains slider position information, interpret it as such. */
+			/*
 			uart_printf("[Slider Position] {%d%%, %d%%}\n",
 					    ((uint32_t)data->data[0]*100)/0xFF,
 					    ((uint32_t)data->data[1]*100)/0xFF);
+			*/
 		}
 		else
 		{
@@ -69,8 +85,23 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 
 static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
-	uart_printf("RX: ");
+	//uart_printf("RX: ");
 	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? (&msg->data) : NULL);
+	
+	if (msg->id.value == CAN_JOYSTICK_MSG_ID && msg->data.len == 2)
+	{
+		/* Use the joystick direction values to adjust the servo position */
+		joystick_direction_t x_dir = msg->data.data[0];
+		// TODO: should move gradually until stick is in neutral
+		if (x_dir == RIGHT)
+		{
+			servo_position_adjust(M_JOYSTICK_IMPACT_ON_SERVO);
+		}
+		else if (x_dir == LEFT)
+		{
+			servo_position_adjust(-1* (int16_t)M_JOYSTICK_IMPACT_ON_SERVO);
+		}
+	} 
 }
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
@@ -100,6 +131,11 @@ static void m_can_init(void)
 	(void) can_init(&init);
 }
 
+static void m_score_reset(void)
+{
+	m_current_game_score = 0;
+}
+
 static void debug_output_mck_on_pin(void)
 {
 
@@ -113,15 +149,32 @@ int main(void)
 {
     /* Initialize the SAM system */
     SystemInit();
+	
+	debug_output_mck_on_pin();
+
+	m_score_reset();
 
 	// Disable watchdog timer (for now)
 	WDT->WDT_MR = WDT_MR_WDDIS;
 
 	uart_init();
+	ir_adc_init();
+	servo_init();
 	m_can_init();
 
     /* Replace with your application code */
     while (1)
     {
+		/* Poll IR to get the user score. */
+		ir_state_t current_state = ir_state_get();
+
+		if (current_state == M_BLOCKED)
+		{
+			m_current_game_score++;
+			ir_blocked_count_reset();
+		}
+
+		uart_printf("< Current score: %d >\n", m_current_game_score);
+		_delay_ms(500);
     }
 }
