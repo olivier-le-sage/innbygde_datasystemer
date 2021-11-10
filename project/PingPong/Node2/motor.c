@@ -34,7 +34,7 @@ uint16_t m_pi_controller_next_value(void)
 
     error = pi_state.motor_target_pos - pi_state.motor_current_pos;
 
-    // use the error to find the next value    
+    // use the error to find the next value
     if (error > PI_MAX_ERROR)
     {
         error = PI_MAX_ERROR;
@@ -59,13 +59,13 @@ uint16_t m_pi_controller_next_value(void)
     }
     else
     {
-        i_term = K_I * m_pi_controller_sum_error;
+        i_term = K_I * pi_state.pi_controller_sum_error;
         pi_state.pi_controller_sum_error = temp_sum_error;
     }
 
     // Sum the P and I terms to obtain the output
     // Shift down to convert back from fixed-point numbers
-    // This should work even if the terms are somehow negative, 
+    // This should work even if the terms are somehow negative,
     //   because negative numbers are represented in 2's complement on ARM
     next_value = (p_term + i_term) >> M_FIXED_POINT_SHIFT;
 
@@ -77,6 +77,8 @@ uint16_t m_pi_controller_next_value(void)
     {
         next_value = MOTOR_POS_MIN;
     }
+
+    pi_state.motor_current_pos = next_value;
 
     return (uint16_t)next_value;
 }
@@ -149,5 +151,5 @@ void motor_pos_set(uint16_t pos)
         return;
     }
 
-    m_motor_target_pos = pos;
+    pi_state.motor_target_pos = pos;
 }
