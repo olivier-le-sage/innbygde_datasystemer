@@ -26,7 +26,7 @@ typedef struct
 
 static m_motor_pid_controller_t pid_state;
 
-uint32_t m_pis_controller_next_value(void)
+uint32_t m_pid_controller_next_value(void)
 {
     uint32_t p_term;
     uint32_t i_term;
@@ -35,7 +35,7 @@ uint32_t m_pis_controller_next_value(void)
     int32_t temp_sum_error;
     int32_t next_value;
 
-    error = pid_state.motor_target_pos - pid_state.motor_current_pos;
+    error = (pid_state.motor_target_pos - pid_state.motor_current_pos) << M_FIXED_POINT_SHIFT;
 
     // use the error to find the next value
     if (error > PID_MAX_ERROR)
@@ -55,7 +55,7 @@ uint32_t m_pis_controller_next_value(void)
         i_term = PID_MAX_I_TERM;
         pid_state.pid_controller_sum_error = PID_MAX_SUM_ERROR;
     }
-    else if (temp_sum_error < -PI_MAX_SUM_ERROR)
+    else if (temp_sum_error < -PID_MAX_SUM_ERROR)
     {
         i_term = -PID_MAX_I_TERM;
         pid_state.pid_controller_sum_error = -PID_MAX_SUM_ERROR;
@@ -68,7 +68,7 @@ uint32_t m_pis_controller_next_value(void)
 
     d_term = K_D * (pid_state.motor_current_pos - pid_state.motor_last_pos);
 
-    pid_state.motor_last_pos = motor_current_pos;
+    pid_state.motor_last_pos = pid_state.motor_current_pos;
 
     // Sum the P and I terms to obtain the output
     // Shift down to convert back from fixed-point numbers
@@ -149,7 +149,6 @@ void motor_init(void)
     NVIC_EnableIRQ(DACC_IRQn);
 
     m_reset_pid_controller();
-	m_dacc_value_write(0);
 }
 
 void motor_pos_set(uint16_t pos)
@@ -160,4 +159,5 @@ void motor_pos_set(uint16_t pos)
     }
 
     pid_state.motor_target_pos = pos;
+	  m_dacc_value_write(m_pid_controller_next_value());
 }
