@@ -9,7 +9,7 @@
 // The representation used is fixed-point with a shift of 7
 #define M_FIXED_POINT_SHIFT 7
 #define K_P 128 // = 1
-#define K_I 64 // = 0.5
+#define K_I 64  // = 0.5
 
 #define PI_MAX_SUM_ERROR (INT32_MAX / (K_P + 1))
 #define PI_MAX_ERROR     (INT32_MAX / (K_I + 1))
@@ -24,7 +24,7 @@ typedef struct
 
 static m_motor_pi_controller_t pi_state;
 
-uint16_t m_pi_controller_next_value(void)
+uint32_t m_pi_controller_next_value(void)
 {
     uint32_t p_term;
     uint32_t i_term;
@@ -78,9 +78,9 @@ uint16_t m_pi_controller_next_value(void)
         next_value = MOTOR_POS_MIN;
     }
 
-    pi_state.motor_current_pos = next_value;
+    pi_state.motor_current_pos = (uint16_t)next_value;
 
-    return (uint16_t)next_value;
+    return next_value;
 }
 
 void m_reset_pi_controller(void)
@@ -95,9 +95,9 @@ void m_reset_pi_controller(void)
 // Write USER_SEL in DACC_MODE to set channel
 // Must configure refresh to periodically refresh output signal
 
-static void m_dacc_value_write(uint16_t value)
+static void m_dacc_value_write(uint32_t value)
 {
-	DACC->DACC_CDR = (uint32_t) value;
+	DACC->DACC_CDR = value;
 }
 
 void DACC_Handler(void)
