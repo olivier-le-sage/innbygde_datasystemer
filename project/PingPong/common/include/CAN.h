@@ -11,6 +11,7 @@
 #define CAN_SUCCESS 0
 #define CAN_ERROR_INVALID 1
 #define CAN_ERROR_BUSY 2
+#define CAN_ERROR_WRITE 3
 #define CAN_ERROR_NOT_SUPPORTED 10
 #define CAN_ERROR_GENERIC 50
 
@@ -54,3 +55,5 @@ uint8_t can_data_send(uint8_t tx_buf_no, const can_id_t *id, const can_data_t *d
 uint8_t can_remote_send(uint8_t tx_buf_no, const can_id_t *id);
 
 uint8_t can_get_error_counters(can_error_counter_t * counts);
+uint8_t can_sleep(void);
+uint8_t can_wake(void);

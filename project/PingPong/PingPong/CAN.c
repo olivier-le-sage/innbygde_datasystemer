@@ -28,6 +28,9 @@
 // Calculate BRP based on baudrate and CPU frequency
 #define BRP_CALCULATE(baudrate) ((uint8_t) ((((uint32_t)(F_MCP_CPU / 2)  / (baudrate)) - 1) & 0x3F))
 
+// Output pin connected to the MCP2551 Rs pin
+#define TRANSCEIVER_RS_PIN (PB3)
+
 static can_rx_handler_t m_rx_handler;
 static can_tx_handler_t m_tx_handler;
 
@@ -241,12 +244,15 @@ uint8_t can_init(const can_init_t * init_params)
     assert(bit_cfg->prop_seg_len + bit_cfg->phase_1_len >= bit_cfg->phase_2_len);
     assert(bit_cfg->phase_2_len > bit_cfg->sync_jump_len);
 
-
     m_rx_handler = init_params->rx_handler;
     m_tx_handler = init_params->tx_handler;
 
     // Initialize TX buffer availability bitfield to all ones
     m_tx_buf_avail = (1 << MCP_TX_BUF_COUNT) - 1;
+
+    // Set up MCP2551 Rs pin and set it low to enable the transceiver
+    DDRB |= (1 << TRANSCEIVER_RS_PIN);
+    PORTB &= ~(1 << TRANSCEIVER_RS_PIN);
 
     if (!mcp2515_init(&(mcp2515_init_t){ .evt_handler = m_mcp2515_evt_handler }))
     {
@@ -318,3 +324,47 @@ uint8_t can_get_error_counters(can_error_counter_t * counts)
 
     return CAN_SUCCESS;
 }
+
+static uint8_t m_can_mode_set(uint8_t mode)
+{
+    mcp2515_bit_modify(MCP_CANCTRL, MCP_CANCTRL_MODE_MASK, mode);
+    uint8_t read_mode = mcp2515_read(MCP_CANCTRL) & MCP_CANCTRL_MODE_MASK;
+    if (read_mode != mode)
+    {
+        return CAN_ERROR_WRITE;
+    }
+    return CAN_SUCCESS;
+}
+
+uint8_t can_sleep(void)
+{
+    // TODO: check if we are doing something important
+    // Set mode to SLEEP
+    uint8_t rc = m_can_mode_set(MCP_CANCTRL_MODE_SLEEP);
+    if (rc == CAN_SUCCESS)
+    {
+        // Disable the transceiver by setting Rs pin high
+        PORTB |= (1 << TRANSCEIVER_RS_PIN);
+    }
+    return rc;
+}
+
+uint8_t can_wake(void)
+{
+    // Set mode to NORMAL (mode is LISTENONLY after waking up)
+    uint8_t rc = m_can_mode_set(MCP_CANCTRL_MODE_NORMAL);
+    if (rc == CAN_SUCCESS)
+    {
+        // Enable the transceiver by setting Rs pin low
+        PORTB &= ~(1 << TRANSCEIVER_RS_PIN);
+    }
+    return rc;
+}
+
+/*
+The OST maintains Reset
+for the first 128 OSC1 clock cycles after power-up or a
+wake-up from Sleep mode occurs. It should be noted
+that no SPI protocol operations should be attempted
+until after the OST has expired 
+*/
