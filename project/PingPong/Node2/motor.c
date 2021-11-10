@@ -142,6 +142,7 @@ void motor_init(void)
     NVIC_EnableIRQ(DACC_IRQn);
 
     m_reset_pi_controller();
+	m_dacc_value_write(0);
 }
 
 void motor_pos_set(uint16_t pos)
