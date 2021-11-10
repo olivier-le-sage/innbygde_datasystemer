@@ -14,3 +14,6 @@
 /* Utility macros */
 #define __NOP() {__asm__ __volatile__ ("nop");}
 #define NUMELTS(array) (sizeof(array)/sizeof(array[0]))
+
+// Configuration
+#define UPDATE_PERIOD_MS 50

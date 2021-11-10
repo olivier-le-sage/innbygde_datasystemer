@@ -10,6 +10,8 @@
 #include "mcp2515.h"
 #include "ping_pong.h"
 
+// TODO: enable sleep mode?
+
 // Size of the buffer for setting up a transmission.
 // Equal to the TX buffer region size minus TXBnCTRL (control reg)
 #define TX_BUFFER_SIZE (13)

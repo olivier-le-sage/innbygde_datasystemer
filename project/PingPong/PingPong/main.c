@@ -10,7 +10,13 @@
 #include "controls.h"
 #include "ui.h"
 #include "CAN.h"
+#include "power.h"
 #include <util/delay.h>
+
+#define UPDATE_PERIOD_OCR ((UPDATE_PERIOD_MS * F_CPU) / (1000 * 1024))
+#if UPDATE_PERIOD_OCR > UINT8_MAX
+#error "Update period too large"
+#endif
 
 #define M_JOYSTICK_DATA_TXBUF_NO (0)
 #define M_SLIDERS_DATA_TXBUF_NO  (1)
@@ -26,6 +32,8 @@
 static joystick_direction_t m_x_dir;
 static joystick_direction_t m_y_dir;
 static sliders_position_t m_sliders;
+
+static volatile bool m_timer_tick;
 
 static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 {
@@ -108,23 +116,23 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
 {
+	/*
 	_delay_ms(50);
 
 	if (tx_buf_no == M_JOYSTICK_DATA_TXBUF_NO)
 	{
-		m_send_controls_can_msg(M_SLIDERS_DATA);
 	}
 	else if (tx_buf_no == M_SLIDERS_DATA_TXBUF_NO)
 	{
-		m_send_controls_can_msg(M_JOYSTICK_DATA);
 	}
+	*/
 }
 
 static uint8_t m_init_can()
 {
 	can_init_t init = {
 		.rx_handler = m_handle_can_rx,
-		.tx_handler = m_handle_can_tx,
+		.tx_handler = m_handle_can_tx,  // FIXME: don't need this now
 		.buf = {
 			.rx_buf_count = 1,
 			.tx_buf_count = 2
@@ -141,6 +149,50 @@ static uint8_t m_init_can()
 	return can_init(&init);
 }
 
+static void m_timer_init(void)
+{
+	OCR2 = UPDATE_PERIOD_OCR; // Set timeout value
+	TIMSK |= OCIE2; // Enable output compare interrupt for timer2
+	TCCR2 = (1 << WGM21) | // Set timer to clear on compare match
+			(1 << CS22) | (1 << CS21) | (1 << CS20); // Set prescaler to 1024 (also enables timer)
+}
+
+static void m_update_state(void)
+{
+	ui_cmd_t ui_cmd;
+
+	get_joystick_dir(&m_x_dir, &m_y_dir);
+	m_send_controls_can_msg(M_JOYSTICK_DATA);
+	//printf("Joystick: x-axis dir=%s, y-axis dir=%s\n", joystick_dir_to_str(m_x_dir), joystick_dir_to_str(m_y_dir));
+
+	get_sliders_pos(&m_sliders);
+	m_send_controls_can_msg(M_SLIDERS_DATA);
+	//printf("left slider=%d%%, right slider=%d%%\n", (m_sliders.left_slider_pos*100)/0xFF, (m_sliders.right_slider_pos*100)/0xFF);
+	//printf("\n");
+
+	ui_cmd = UI_DO_NOTHING;
+
+	if (m_x_dir == NEUTRAL && m_y_dir == UP)
+	{
+		ui_cmd = UI_SELECT_DOWN;
+	}
+	else if (m_x_dir == NEUTRAL && m_y_dir == DOWN)
+	{
+		ui_cmd = UI_SELECT_UP;
+	}
+	else if (m_x_dir == RIGHT && m_y_dir == NEUTRAL)
+	{
+		ui_cmd = UI_ENTER_SUBMENU;
+	}
+
+	ui_issue_cmd(ui_cmd);
+}
+
+ISR(TC2_vect)
+{
+	m_timer_tick = true;
+}
+
 int main(void)
 {
 	ENABLE_SRAM();
@@ -153,37 +205,17 @@ int main(void)
 
 	// direct printf to the uart
 	uart_config_streams();
-
-	// Navigate user interface
-	ui_cmd_t ui_cmd;
-
+	m_timer_init();
 
 	while(1)
 	{
-		get_joystick_dir(&m_x_dir, &m_y_dir);
-		//printf("Joystick: x-axis dir=%s, y-axis dir=%s\n", joystick_dir_to_str(m_x_dir), joystick_dir_to_str(m_y_dir));
+		// Wait for interrupt 
+		power_sleep();
 
-		get_sliders_pos(&m_sliders);
-		//printf("left slider=%d%%, right slider=%d%%\n", (m_sliders.left_slider_pos*100)/0xFF, (m_sliders.right_slider_pos*100)/0xFF);
-		//printf("\n");
-
-		_delay_ms(150); // the CPU is too fast
-
-		ui_cmd = UI_DO_NOTHING;
-
-		if (m_x_dir == NEUTRAL && m_y_dir == UP)
+		if (m_timer_tick)
 		{
-			ui_cmd = UI_SELECT_DOWN;
+			m_timer_tick = false;
+			m_update_state();
 		}
-		else if (m_x_dir == NEUTRAL && m_y_dir == DOWN)
-		{
-			ui_cmd = UI_SELECT_UP;
-		}
-		else if (m_x_dir == RIGHT && m_y_dir == NEUTRAL)
-		{
-			ui_cmd = UI_ENTER_SUBMENU;
-		}
-
-		ui_issue_cmd(ui_cmd);
 	}
 }
