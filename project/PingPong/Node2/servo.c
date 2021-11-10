@@ -35,12 +35,12 @@ void TC0_Handler(void)
         if (m_current_servo_position < m_target_servo_position)
         {
             m_current_servo_position++;
-            TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position);
+            TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS);
         }
         else if (m_current_servo_position > m_target_servo_position)
         {
             m_current_servo_position--;
-            TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position);
+            TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS);
         }
         else
         {

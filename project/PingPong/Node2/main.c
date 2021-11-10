@@ -96,11 +96,15 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 		// TODO: should move gradually until stick is in neutral
 		if (x_dir == RIGHT)
 		{
-			servo_position_adjust(M_JOYSTICK_IMPACT_ON_SERVO);
+			servo_position_goto(SERVO_POS_MIN);
 		}
 		else if (x_dir == LEFT)
 		{
-			servo_position_adjust(-1* (int16_t)M_JOYSTICK_IMPACT_ON_SERVO);
+			servo_position_goto(SERVO_POS_MAX);
+		}
+		else
+		{
+			servo_position_stop();
 		}
 	} 
 }

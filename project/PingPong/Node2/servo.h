@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define SERVO_POS_MIN 0
+#define SERVO_POS_MAX 119
+
 // Initialize the servo
 void servo_init(void);
 // Adjust the servo by a certain delta
