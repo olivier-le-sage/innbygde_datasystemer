@@ -36,6 +36,17 @@ static void m_format_hex_byte(char * out, uint8_t value)
 	out[1] = lsb < 0xA ? '0' + lsb : 'A' + (lsb - 0xA);
 }
 
+static void m_toggle_solenoid(void)
+{
+	PIOB->PIO_CODR = PIO_CODR_P1;
+	asm("nop");
+	asm("nop");
+	asm("nop");
+	asm("nop");
+	asm("nop");
+	PIOB->PIO_SODR = PIO_SODR_P1;
+}
+
 static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 {
 	if (data)
@@ -50,7 +61,7 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 		    */
 		}
 		else if (id->value == CAN_SLIDER_MSG_ID && data->len == 2)
-		{                                                                                                                                                                                                                       
+		{
 			/* Message contains slider position information, interpret it as such. */
 			/*
 			uart_printf("[Slider Position] {%d%%, %d%%}\n",
@@ -88,7 +99,7 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
 	//uart_printf("RX: ");
 	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? (&msg->data) : NULL);
-	
+
 	if (msg->id.value == CAN_JOYSTICK_MSG_ID && msg->data.len == 2)
 	{
 		/* Use the joystick direction values to adjust the servo position */
@@ -143,7 +154,6 @@ static void m_score_reset(void)
 
 static void debug_output_mck_on_pin(void)
 {
-
 	// Configure PCK1 to output MCK
 	PMC->PMC_PCK[1] = PMC_PCK_CSS_MCK | PMC_PCK_PRES_CLK_1;
 	// Enable PCK1 output
@@ -154,10 +164,14 @@ int main(void)
 {
     /* Initialize the SAM system */
     SystemInit();
-	
+
 	debug_output_mck_on_pin();
 
 	m_score_reset();
+
+	// Enable IO pin 33 for solenoid control
+	PIOB->PIO_PER = PIO_PER_P1;
+	PIOB->PIO_OER = PIO_OER_P1;
 
 	// Disable watchdog timer (for now)
 	WDT->WDT_MR = WDT_MR_WDDIS;
@@ -183,5 +197,6 @@ int main(void)
 		uart_printf("< Current score: %d >\n", m_current_game_score);
 		_delay_ms(500);
 		motor_pos_set(MOTOR_POS_MAX/2 + MOTOR_POS_MAX/3);
+		m_toggle_solenoid();
     }
 }
