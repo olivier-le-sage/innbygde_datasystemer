@@ -152,7 +152,7 @@ static uint8_t m_init_can()
 static void m_timer_init(void)
 {
 	OCR2 = UPDATE_PERIOD_OCR; // Set timeout value
-	TIMSK |= OCIE2; // Enable output compare interrupt for timer2
+	TIMSK |= (1 << OCIE2); // Enable output compare interrupt for timer2
 	TCCR2 = (1 << WGM21) | // Set timer to clear on compare match
 			(1 << CS22) | (1 << CS21) | (1 << CS20); // Set prescaler to 1024 (also enables timer)
 }
@@ -188,7 +188,7 @@ static void m_update_state(void)
 	ui_issue_cmd(ui_cmd);
 }
 
-ISR(TC2_vect)
+ISR(TIMER2_COMP_vect)
 {
 	m_timer_tick = true;
 }
