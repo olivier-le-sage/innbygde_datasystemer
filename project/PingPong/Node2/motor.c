@@ -17,8 +17,9 @@
 #define PID_MAX_ERROR     (INT32_MAX / (K_I + 1))
 #define PID_MAX_I_TERM    (INT32_MAX / 2)
 
-#define MOTOR_TIMER_INSTANCE (1)
 #define PID_INTERVAL_MS (20 * MCK_8_FACTOR_MS) // TODO: tune
+#define TC_RA_VALUE (20 * MCK_8_FACTOR_MS)
+
 typedef struct
 {
     int32_t  pid_controller_sum_error;
@@ -91,13 +92,25 @@ int32_t m_pid_controller_next_value(void)
     return next_adjust;
 }
 
-
+void TC1_Handler(void)
+{
+	volatile uint32_t status = TC0->TC_CHANNEL[0].TC_SR;
+	(void)status;
+}
 
 void m_setup_timer(void)
 {
     /* Setup timer for DAC conversions
      * A new PID value is generated every PID_INTERVAL_MS ms */
-    
+	TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKDIS;
+    TC0->TC_CHANNEL[0].TC_CMR |= TC_CMR_TCCLKS_TIMER_CLOCK2
+						       | TC_CMR_ACPC_TOGGLE
+							   | TC_CMR_WAVE
+							   | TC_CMR_WAVSEL_UP_RC;
+	TC0->TC_CHANNEL[0].TC_RC = 0x3000;
+	TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
+	TC0->TC_CHANNEL[0].TC_IER |= TC_IER_CPCS;
+	NVIC_EnableIRQ(TC1_IRQn);
 }
 
 void m_reset_pid_controller(void)
@@ -123,46 +136,43 @@ void DACC_Handler(void)
 
     if ((status & DACC_ISR_EOC) && (status & DACC_ISR_TXRDY))
     {
-		int32_t pid_adjust = m_pid_controller_next_value();
-		pid_state.motor_current_pos += pid_adjust;
-        m_dacc_value_write(pid_state.motor_current_pos);
-
-void TC1_Handler(void)
-{
-    uint32_t status = TC1->TC_CHANNEL[1].TC_SR;
-
-    if (status & TC_SR_CPCS)
-    {
-
-        // Probably don't need to do anything here
-    }
+		//int32_t pid_adjust = m_pid_controller_next_value();
+		//pid_state.motor_current_pos += pid_adjust;
+		pid_state.motor_current_pos = (pid_state.motor_current_pos + 1 ) % 0xFFF;
+		m_dacc_value_write(pid_state.motor_current_pos);
+	}
 }
 
 void motor_init(void)
 {
     // Configure PMC
     // Enable clock
-    PMC->PMC_PCR = PMC_PCR_PID(ID_DACC) |
-                   PMC_PCR_PID(ID_TC1) |
+    PMC->PMC_PCR |= PMC_PCR_PID(ID_DACC) |
                    PMC_PCR_CMD |
                    PMC_PCR_DIV_PERIPH_DIV_MCK |
                    PMC_PCR_EN;
     PMC->PMC_PCER1 |= (uint32_t) (1 << (ID_DACC - 32));
-    PMC->PMC_PCER0 |= (uint32_t) (1 << ID_TC1);
+	
+    PMC->PMC_PCR |= PMC_PCR_PID(ID_TC0) |
+				    PMC_PCR_CMD |
+				    PMC_PCR_DIV_PERIPH_DIV_MCK |
+				    PMC_PCR_EN;
+    PMC->PMC_PCER0 |= (uint32_t) (1 << ID_TC0);
 
     // I don't think we need to configure the pin in PIO since it is an "extra function"
 
     // TODO: configure DACC
     DACC->DACC_CR = DACC_CR_SWRST;  // Reset DACC
-	  DACC->DACC_WPMR = DACC_WPMR_WPKEY(0x444143);
+	DACC->DACC_WPMR = DACC_WPMR_WPKEY(0x444143);
     DACC->DACC_MR = DACC_MR_TRGEN_EN |
-                    DACC_MR_TRGSEL(0b010) | // Use TC1
+                    DACC_MR_TRGSEL(0b010) | // Use TC1 TIO as trigger
                     DACC_MR_WORD_HALF |  // Use half-word mode (could maybe use word mode)
                     DACC_MR_REFRESH(1) |
                     DACC_MR_USER_SEL_CHANNEL0 |  // Use channel 0
                     DACC_MR_TAG_DIS |  // Don't use tag mode
                     DACC_MR_MAXS_NORMAL |  // Don't use max speed mode
                     DACC_MR_STARTUP_64;  // 0 clock period startup time (tune)
+
     // Enable channel 0
     DACC->DACC_CHER = DACC_CHER_CH0;
 
@@ -182,9 +192,9 @@ void motor_pos_set(uint16_t pos)
         return;
     }
 
-	pid_state.motor_target_pos = pos;
+	  pid_state.motor_target_pos = pos;
 
-    int32_t pid_adjust = m_pid_controller_next_value();
-    pid_state.motor_current_pos += pid_adjust;
+    // int32_t pid_adjust = m_pid_controller_next_value();
+    // pid_state.motor_current_pos += pid_adjust;
     m_dacc_value_write(pid_state.motor_current_pos);
 }

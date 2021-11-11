@@ -2,8 +2,6 @@
 
 #include <sam3x8e.h>
 
-#define MCK_8_FACTOR_MS 10500
-
 void timer_init(void)
 {
     // Assumes that servo initialized TC0
