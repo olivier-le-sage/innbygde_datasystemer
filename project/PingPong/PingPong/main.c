@@ -14,7 +14,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
-#define UPDATE_PERIOD_OCR ((UPDATE_PERIOD_MS * F_CPU) / (1000 * 1024))
+#define UPDATE_PERIOD_OCR  ((UPDATE_PERIOD_MS * F_CPU) / (1000UL * 1024UL) )
 #if UPDATE_PERIOD_OCR > UINT8_MAX
 #error "Update period too large"
 #endif
@@ -152,7 +152,7 @@ static uint8_t m_init_can()
 
 static void m_timer_init(void)
 {
-	OCR2 = UPDATE_PERIOD_OCR; // Set timeout value
+	OCR2 = (uint8_t) UPDATE_PERIOD_OCR; // Set timeout value
 	TIMSK |= (1 << OCIE2); // Enable output compare interrupt for timer2
 	TCCR2 = (1 << WGM21) | // Set timer to clear on compare match
 			(1 << CS22) | (1 << CS21) | (1 << CS20); // Set prescaler to 1024 (also enables timer)
@@ -161,6 +161,7 @@ static void m_timer_init(void)
 static void m_update_state(void)
 {
 	ui_cmd_t ui_cmd;
+
 
 	get_joystick_dir(&m_x_dir, &m_y_dir);
 	m_send_controls_can_msg(M_JOYSTICK_DATA);
@@ -194,6 +195,21 @@ ISR(TIMER2_COMP_vect)
 	m_timer_tick = true;
 }
 
+static void m_sleep(void)
+{
+	uint8_t rc;
+
+	joystick_sleep();
+	rc = can_sleep();
+	assert(rc == CAN_SUCCESS);
+
+	power_sleep();
+
+	rc = can_wake();
+	assert(rc == CAN_SUCCESS);
+	joystick_wake();
+}
+
 int main(void)
 {
 	ENABLE_SRAM();
@@ -211,7 +227,7 @@ int main(void)
 	while(1)
 	{
 		// Wait for interrupt 
-		power_sleep();
+		m_sleep();
 
 		if (m_timer_tick)
 		{
