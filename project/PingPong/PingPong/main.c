@@ -11,6 +11,7 @@
 #include "ui.h"
 #include "CAN.h"
 #include "power.h"
+#include <avr/interrupt.h>
 #include <util/delay.h>
 
 #define UPDATE_PERIOD_OCR ((UPDATE_PERIOD_MS * F_CPU) / (1000 * 1024))
