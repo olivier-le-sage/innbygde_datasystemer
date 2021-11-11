@@ -1,5 +1,6 @@
 #include "motor.h"
 #include "sam.h"
+#include "timer.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -8,14 +9,16 @@
 // Parameters for the PID controller. TODO: tune
 // The representation used is fixed-point with a shift of 7 (so 2^7 = 128 = 1)
 #define M_FIXED_POINT_SHIFT 7
-#define K_P 1  // = 0.0078125
-#define K_I 0  // = 0
-#define K_D 0  // = 0.0078125
+#define K_P 4  // = 0.0078125
+#define K_I 1  // = 0
+#define K_D 1  // = 0.0078125
 
 #define PID_MAX_SUM_ERROR (INT32_MAX / (K_P + 1))
 #define PID_MAX_ERROR     (INT32_MAX / (K_I + 1))
 #define PID_MAX_I_TERM    (INT32_MAX / 2)
 
+#define MOTOR_TIMER_INSTANCE (1)
+#define PID_INTERVAL_MS (20 * MCK_8_FACTOR_MS) // TODO: tune
 typedef struct
 {
     int32_t  pid_controller_sum_error;
@@ -76,16 +79,25 @@ int32_t m_pid_controller_next_value(void)
     //   because negative numbers are represented in 2's complement on ARM
     next_adjust = (p_term + i_term + d_term) >> M_FIXED_POINT_SHIFT;
 
-    if (next_adjust > MOTOR_POS_MAX)
+    if (pid_state.motor_current_pos + next_adjust > MOTOR_POS_MAX)
     {
-        next_adjust = MOTOR_POS_MAX;
+        next_adjust = 0;
     }
-    else if (next_adjust < MOTOR_POS_MIN)
+    else if (pid_state.motor_current_pos + next_adjust < MOTOR_POS_MIN)
     {
-        next_adjust = MOTOR_POS_MIN;
+        next_adjust = 0;
     }
 
     return next_adjust;
+}
+
+
+
+void m_setup_timer(void)
+{
+    /* Setup timer for DAC conversions
+     * A new PID value is generated every PID_INTERVAL_MS ms */
+    
 }
 
 void m_reset_pid_controller(void)
@@ -114,6 +126,15 @@ void DACC_Handler(void)
 		int32_t pid_adjust = m_pid_controller_next_value();
 		pid_state.motor_current_pos += pid_adjust;
         m_dacc_value_write(pid_state.motor_current_pos);
+
+void TC1_Handler(void)
+{
+    uint32_t status = TC1->TC_CHANNEL[1].TC_SR;
+
+    if (status & TC_SR_CPCS)
+    {
+
+        // Probably don't need to do anything here
     }
 }
 
@@ -122,20 +143,22 @@ void motor_init(void)
     // Configure PMC
     // Enable clock
     PMC->PMC_PCR = PMC_PCR_PID(ID_DACC) |
+                   PMC_PCR_PID(ID_TC1) |
                    PMC_PCR_CMD |
                    PMC_PCR_DIV_PERIPH_DIV_MCK |
                    PMC_PCR_EN;
     PMC->PMC_PCER1 |= (uint32_t) (1 << (ID_DACC - 32));
+    PMC->PMC_PCER0 |= (uint32_t) (1 << ID_TC1);
 
     // I don't think we need to configure the pin in PIO since it is an "extra function"
 
     // TODO: configure DACC
     DACC->DACC_CR = DACC_CR_SWRST;  // Reset DACC
-	DACC->DACC_WPMR = DACC_WPMR_WPKEY(0x444143);
-    DACC->DACC_MR = DACC_MR_TRGEN_DIS |  // Use free-running mode
-                    // DAC_MR_TRGSEL(<val>) |
+	  DACC->DACC_WPMR = DACC_WPMR_WPKEY(0x444143);
+    DACC->DACC_MR = DACC_MR_TRGEN_EN |
+                    DACC_MR_TRGSEL(0b010) | // Use TC1
                     DACC_MR_WORD_HALF |  // Use half-word mode (could maybe use word mode)
-                    DACC_MR_REFRESH(128) |  // Refresh every 1024 * x / (MCK / 2) cycles (tune)
+                    DACC_MR_REFRESH(1) |
                     DACC_MR_USER_SEL_CHANNEL0 |  // Use channel 0
                     DACC_MR_TAG_DIS |  // Don't use tag mode
                     DACC_MR_MAXS_NORMAL |  // Don't use max speed mode
@@ -149,6 +172,7 @@ void motor_init(void)
     NVIC_EnableIRQ(DACC_IRQn);
 
     m_reset_pid_controller();
+    m_setup_timer();
 }
 
 void motor_pos_set(uint16_t pos)

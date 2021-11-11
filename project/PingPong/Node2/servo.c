@@ -1,4 +1,5 @@
 #include "servo.h"
+#include "timer.h"
 
 #include <sam3x8e.h>
 
@@ -18,10 +19,7 @@
 // Period for the PWM used for the servo
 #define SERVO_PWM_PERIOD 2000
 
-#define MCK_8_FACTOR_FOR_TICK 105
-
 #define TC_RC_VALUE (SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK)
-#define TC_RA_VALUE(_v) (TC_RC_VALUE - (((uint32_t) (_v)) * MCK_8_FACTOR_FOR_TICK))
 
 static volatile int16_t m_current_servo_position;
 static volatile int16_t m_target_servo_position = SERVO_TARGET_POS_INVALID;
@@ -35,12 +33,14 @@ void TC0_Handler(void)
         if (m_current_servo_position - 2 < m_target_servo_position)
         {
             m_current_servo_position += 3;
-            TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS);
+            TC0->TC_CHANNEL[0].TC_RA =
+                TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS, TC_RC_VALUE);
         }
         else if (m_current_servo_position + 2 > m_target_servo_position)
         {
             m_current_servo_position -= 3;
-            TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS);
+            TC0->TC_CHANNEL[0].TC_RA =
+                TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS, TC_RC_VALUE);
         }
         else
         {
@@ -75,7 +75,7 @@ void servo_init(void)
     // Reset counter on this value
     TC0->TC_CHANNEL[0].TC_RC = SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK;
     // Set neutral position
-    TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(SERVO_NEUTRAL_STEPS);
+    TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(SERVO_NEUTRAL_STEPS, TC_RC_VALUE);
 
     TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
 
@@ -90,7 +90,8 @@ void servo_position_adjust(int16_t delta)
         && ( m_current_servo_position + SERVO_MIN_STEPS + delta <= SERVO_MAX_STEPS))
     {
         m_current_servo_position += delta;
-        TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE((uint16_t)m_current_servo_position + SERVO_MIN_STEPS);
+        TC0->TC_CHANNEL[0].TC_RA =
+            TC_RA_VALUE((uint16_t)m_current_servo_position + SERVO_MIN_STEPS, TC_RC_VALUE);
     }
 }
 
@@ -122,5 +123,6 @@ void servo_position_set(uint16_t position)
         return;
     }
 
-    TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(position + SERVO_MIN_STEPS);
+    TC0->TC_CHANNEL[0].TC_RA =
+        TC_RA_VALUE(position + SERVO_MIN_STEPS, TC_RC_VALUE);
 }
