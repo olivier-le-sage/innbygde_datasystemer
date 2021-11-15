@@ -185,6 +185,9 @@
     <Compile Include="motor.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="power.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="printf_stdarg.c">
       <SubType>compile</SubType>
     </Compile>

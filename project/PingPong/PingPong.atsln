@@ -14,6 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{3D666E
 		common\include\CAN.h = common\include\CAN.h
 		common\include\can_types.h = common\include\can_types.h
 		common\include\controls.h = common\include\controls.h
+		common\include\power.h = common\include\power.h
 	EndProjectSection
 EndProject
 Global
