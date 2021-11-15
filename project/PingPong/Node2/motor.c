@@ -6,8 +6,8 @@
 #include <string.h>
 #include <stdint.h>
 
-// SysTick default clock is MCK/8 -> 10.5MHz
-#define M_SYSTICK_TENMS       (0x2904)
+// SysTick default clock is MCK (?)
+#define M_SYSTICK_TENMS       (0x2904 * 8)
 #define M_SYSTICK_EVERY_100MS ((M_SYSTICK_TENMS - 1) * 100)
 
 // Parameters for the PID controller. TODO: tune
@@ -142,7 +142,7 @@ static void m_delay_20us(void)
 	  
 	  if (systick_current_val < systick_value_at_entry)
 	  {
-		  if ((systick_value_at_entry - systick_current_val) >= 210)
+		  if ((systick_value_at_entry - systick_current_val) >= 210 * 8)
 		  {
 			  break;
 		  }
