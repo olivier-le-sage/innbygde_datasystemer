@@ -336,7 +336,7 @@ void motor_pos_adjust(int16_t delta)
 	{
 		m_pid_state.motor_target_pos = MOTOR_POS_MIN;
 	}
-	if ((int32_t)m_pid_state.motor_target_pos + delta > (int32_t)MOTOR_POS_MAX)
+	else if ((int32_t)m_pid_state.motor_target_pos + delta > (int32_t)MOTOR_POS_MAX)
 	{
 		m_pid_state.motor_target_pos = MOTOR_POS_MAX;
 	}
