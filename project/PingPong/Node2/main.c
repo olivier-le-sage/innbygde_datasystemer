@@ -213,13 +213,15 @@ static void m_score_reset(void)
 static bool m_score_send(void)
 {
 	static can_id_t id = { .extended = false, .value = CAN_SCORE_MSG_ID };
-	static uint8_t score[sizeof(uint32_t)];
-	static can_data_t data = { .data = score, .len = sizeof(score) };
+	static uint32_t score;
+	static can_data_t data = { .data = (const uint8_t *) &score, .len = sizeof(score) };
 
 	if (!atomic_set(&m_send_game_score_in_progress))
 	{
 		return false;
 	}
+
+	score = m_current_game_score;
 
 	uint8_t rc = can_data_send(M_SCORE_TXBUF_NO, &id, &data);
 	if (rc != CAN_SUCCESS)
