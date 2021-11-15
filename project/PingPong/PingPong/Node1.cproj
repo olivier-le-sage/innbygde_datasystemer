@@ -176,9 +176,6 @@
     <Compile Include="power.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="power.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="rs232.c">
       <SubType>compile</SubType>
     </Compile>
