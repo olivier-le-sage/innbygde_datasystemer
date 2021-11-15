@@ -17,12 +17,8 @@
 #include "CAN.h"
 #include "motor.h"
 
-/* Approximative delay routines for 84MHz */
-#define _delay_us(time_us) {for (uint32_t i = 0; i < (12*time_us); i++){asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");}}
-#define _delay_ms(time_ms) _delay_us((time_ms*1000))
-
 /* TODO: Fine-tune these values for an enhanced user experience */
-#define M_JOYSTICK_IMPACT_ON_MOTOR (1000)
+#define M_JOYSTICK_IMPACT_ON_MOTOR (100)
 #define M_SLIDER_THRESHOLD_FOR_THRUST (0xFF/2) // 50%
 
 /* Goals are registered when the IR beam is blocked. 1 block = 1 point */

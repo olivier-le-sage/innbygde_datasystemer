@@ -48,9 +48,9 @@ typedef enum
 typedef struct
 {
     int32_t  pid_controller_sum_error;
-    uint32_t motor_target_pos;
-    uint32_t motor_current_pos;
-    uint32_t motor_last_pos;
+    int32_t  motor_target_pos;
+    int32_t  motor_current_pos;
+    int32_t motor_last_pos;
 } m_motor_pid_controller_t;
 
 static m_motor_pid_controller_t m_pid_state;
@@ -103,8 +103,6 @@ static int32_t m_pid_controller_next_value(void)
 
     // Sum the P and I terms to obtain the output
     // Shift down to convert back from fixed-point numbers
-    // This should work even if the terms are somehow negative,
-    //   because negative numbers are represented in 2's complement on ARM
     next_adjust = (p_term + i_term + d_term) >> M_FIXED_POINT_SHIFT;
 
     if (m_pid_state.motor_current_pos + next_adjust > MOTOR_POS_MAX)
@@ -180,8 +178,11 @@ static int16_t m_read_quadrature_encoder_value(void)
   m_delay_20us();
   const volatile uint8_t qenc_lsb = (PIOC->PIO_PDSR >> 1) & 0xFF;
 
-  //PIOD->PIO_CODR |= M_QENC_RST_N;
-  //PIOD->PIO_SODR |= M_QENC_RST_N;
+  PIOD->PIO_CODR |= M_QENC_RST_N; // Need to reset encoder value
+  const volatile uint32_t systick_value_at_entry = SysTick->VAL;
+  while (systick_value_at_entry != SysTick->VAL);
+  PIOD->PIO_SODR |= M_QENC_RST_N;
+
   PIOD->PIO_SODR |= M_QENC_OE_N;
 
   // Knowing that the ARM architecture uses 2's complement to represent signed
@@ -194,8 +195,11 @@ void SysTick_Handler(void)
 	// Vi faar ikke systick IRQ mens CPU sover.
 	// Bruker vi det klokt, er det fremdeles miljoevennlig :)
 
-	const uint16_t quadrature_encoder_value = m_read_quadrature_encoder_value();
-    (void)quadrature_encoder_value;
+	const int16_t quadrature_encoder_value = m_read_quadrature_encoder_value();
+	
+	/* The value of the quadrature encoder counter indicates how much the motor has moved since
+	 * the last time it was polled. */
+    m_pid_state.motor_current_pos += quadrature_encoder_value;
 
     // TODO: use quadrature encoder value to update current motor position
 	// Note: the encoder value indicates the amount of rotation done by the motor
@@ -216,8 +220,7 @@ void SysTick_Handler(void)
 		m_motor_current_direction = MOTOR_DIR_RIGHT;
 	}
 	
-	m_pid_state.motor_current_pos += (pid_adjust/5);
-	m_next_value = m_pid_state.motor_current_pos + pid_adjust;
+	m_next_value = pid_adjust;
 }
 
 void DACC_Handler(void)
@@ -272,17 +275,25 @@ static void m_setup_pios(void)
   PIOC->PIO_OER = ~pioc_inputs; // configure unused pins as output so that they stay 0
   PIOC->PIO_IFER = pioc_inputs;
   PIOC->PIO_IFDR = ~pioc_inputs;
+  PIOC->PIO_PUER = 0;
   PIOC->PIO_PUDR = (uint32_t)-1;
+  
+  // Toggle reset once to ensure the counter is 0
+  PIOD->PIO_CODR |= M_QENC_RST_N;
+  PIOD->PIO_SODR |= M_QENC_RST_N;
 }
 
 void motor_init(void)
 {
+	m_next_value = MOTOR_POS_MAX/2;
+	m_pid_state.motor_target_pos = MOTOR_POS_MAX/2;
+
     // Configure PMC
     // Enable clock - use programmable clock so that the DACC output doesn't change too fast
     PMC->PMC_PCR |= PMC_PCR_PID(ID_DACC) |
-                   PMC_PCR_CMD |
-                   PMC_PCR_DIV_PERIPH_DIV_MCK |
-                   PMC_PCR_EN;
+                    PMC_PCR_CMD |
+                    PMC_PCR_DIV_PERIPH_DIV_MCK |
+                    PMC_PCR_EN;
     PMC->PMC_PCER1 |= (uint32_t) (1 << (ID_DACC - 32));
 
     // I don't think we need to configure the pin in PIO since it is an "extra function"
@@ -315,7 +326,6 @@ void motor_init(void)
 
 	m_setup_pios();
 	m_reset_pid_controller();
-	m_next_value = 0;
 	m_dacc_write_next_value();
 }
 
@@ -344,5 +354,6 @@ void motor_pos_adjust(int16_t delta)
 	{
 		m_pid_state.motor_target_pos += delta;
 	}
+
 	m_pid_state.pid_controller_sum_error = 0; // reset the integrator
 }
