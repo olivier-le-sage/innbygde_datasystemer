@@ -290,3 +290,13 @@ uint8_t can_get_error_counters(can_error_counter_t * counts)
 
     return CAN_SUCCESS;
 }
+
+uint8_t can_sleep(void)
+{
+    return CAN_SUCCESS;
+}
+
+uint8_t can_wake(void)
+{
+    return CAN_SUCCESS;
+}
