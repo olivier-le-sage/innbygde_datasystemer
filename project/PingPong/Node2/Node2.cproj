@@ -197,6 +197,12 @@
     <Compile Include="servo.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="systick.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="systick.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="timer.c">
       <SubType>compile</SubType>
     </Compile>

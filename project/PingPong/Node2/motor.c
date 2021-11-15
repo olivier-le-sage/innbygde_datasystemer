@@ -6,10 +6,6 @@
 #include <string.h>
 #include <stdint.h>
 
-// SysTick default clock is MCK (?)
-#define M_SYSTICK_TENMS       (0x2904 * 8)
-#define M_SYSTICK_EVERY_100MS ((M_SYSTICK_TENMS - 1) * 100)
-
 // Parameters for the PID controller. TODO: tune
 // The representation used is fixed-point with a shift of 7 (so 2^7 = 128 <=> 1)
 #define M_FIXED_POINT_SHIFT 7
@@ -190,7 +186,7 @@ static int16_t m_read_quadrature_encoder_value(void)
   return (int16_t)((qenc_msb << 8) | qenc_lsb);
 }
 
-void SysTick_Handler(void)
+void motor_systick_handle(void)
 {
 	// Vi faar ikke systick IRQ mens CPU sover.
 	// Bruker vi det klokt, er det fremdeles miljoevennlig :)
@@ -314,12 +310,6 @@ void motor_init(void)
 
     // Enable interrupt on EOC
     DACC->DACC_IER = DACC_IER_EOC;
-
-	// Configure Systick settings
-	SysTick->CTRL |= SysTick_CTRL_CLKSOURCE_Msk
-				   | SysTick_CTRL_ENABLE_Msk
-				   | SysTick_CTRL_TICKINT_Msk;
-	SysTick->LOAD = M_SYSTICK_EVERY_100MS & SysTick_LOAD_RELOAD_Msk;
 
 	NVIC_EnableIRQ(DACC_IRQn);
 	NVIC_EnableIRQ(SysTick_IRQn);

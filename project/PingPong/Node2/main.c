@@ -16,10 +16,12 @@
 #include "ir.h"
 #include "CAN.h"
 #include "motor.h"
+#include "systick.h"
 
 /* TODO: Fine-tune these values for an enhanced user experience */
 #define M_JOYSTICK_IMPACT_ON_MOTOR (100)
 #define M_SLIDER_THRESHOLD_FOR_THRUST (0xFF/2) // 50%
+#define M_SYSTICK_PERIOD_10MS (10)
 
 /* Goals are registered when the IR beam is blocked. 1 block = 1 point */
 static uint32_t m_current_game_score;
@@ -165,6 +167,20 @@ static void debug_output_mck_on_pin(void)
 	PMC->PMC_SCER = PMC_SCER_PCK1;
 }
 
+static void m_systick_handler(void)
+{
+	motor_systick_handle();
+}
+
+static void m_systick_init(void)
+{
+	const systick_init_t params = {
+		.cb = m_systick_handler,
+		.period_10ms = M_SYSTICK_PERIOD_10MS
+	};
+	systick_init(&params);
+}
+
 int main(void)
 {
     /* Initialize the SAM system */
@@ -186,6 +202,7 @@ int main(void)
 	servo_init();
 	m_can_init();
 	motor_init();
+	m_systick_init();
 
     /* Replace with your application code */
     while (1)
