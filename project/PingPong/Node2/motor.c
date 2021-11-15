@@ -133,9 +133,25 @@ static void m_delay_20us(void)
 {
   /* Note: Only works if not in low power/sleep mode. */
   const volatile uint32_t systick_value_at_entry = SysTick->VAL;
+  volatile uint32_t systick_current_val;
 
   /* With a 10.5MHz clock, 210 clk cycles = 20us */
-  while ( (SysTick->VAL - systick_value_at_entry) <= 210);
+  for(;;)
+  {
+	  systick_current_val = SysTick->VAL;
+	  
+	  if (systick_current_val < systick_value_at_entry)
+	  {
+		  if ((systick_value_at_entry - systick_current_val) >= 210)
+		  {
+			  break;
+		  }
+	  }
+	  else // Catch wraparound case (if it exists)
+	  {
+		 break;
+	  }
+  }
 }
 
 static int16_t m_read_quadrature_encoder_value(void)
