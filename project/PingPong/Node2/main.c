@@ -18,6 +18,7 @@
 #include "motor.h"
 #include "systick.h"
 #include "joystick_state.h"
+#include "power.h"
 
 extern joystick_direction_t joystick_x_dir;
 extern joystick_direction_t joystick_y_dir;
