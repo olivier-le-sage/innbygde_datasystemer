@@ -132,5 +132,5 @@ void ui_issue_cmd(ui_cmd_t cmd)
 
 void ui_game_screen_update(uint32_t score)
 {
-	snprintf(m_score_text, M_SCORE_TEXT_MAX_LEN - 1, "Score: %u", score); 
+	snprintf(m_score_text, M_SCORE_TEXT_MAX_LEN - 1, "Score: %lu", score); 
 }
