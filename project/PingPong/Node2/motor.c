@@ -6,16 +6,24 @@
 #include <string.h>
 #include <stdint.h>
 
+// SysTick default clock is MCK (?)
+#define M_SYSTICK_TENMS       (0x2904 * 8)
+#define M_SYSTICK_EVERY_100MS ((M_SYSTICK_TENMS - 1) * 100)
+
 // Parameters for the PID controller. TODO: tune
 // The representation used is fixed-point with a shift of 7 (so 2^7 = 128 <=> 1)
 #define M_FIXED_POINT_SHIFT 7
-#define K_P 85  // = 0.6640625
-#define K_I 2   // = 0.015625
-#define K_D 75  // = 0.5859375
+#define K_P 10  // = 0.6640625
+#define K_I 0   // = 0.015625
+#define K_D 1  // = 0.5859375
 
 #define PID_MAX_SUM_ERROR (INT32_MAX / (K_P + 1))
 #define PID_MAX_ERROR     (INT32_MAX / (K_I + 1))
 #define PID_MAX_I_TERM    (INT32_MAX / 2)
+
+#define DACC_MIN (0)
+#define DACC_MAX (((1 << 12) - 1))
+#define DACC_NEUT (DACC_MAX/2)
 
 // (Arduino) pinout of the quadrature encoder control signals (MJ1)
 #define M_QENC_OE_N  (1 << 0 ) // PIOD pin 0  // (arduino 32) // PIN25
@@ -43,24 +51,24 @@ typedef enum
 
 typedef struct
 {
-    int32_t  pid_controller_sum_error;
-    int32_t  motor_target_pos;
-    int32_t  motor_current_pos;
+    int32_t pid_controller_sum_error;
+    int32_t motor_target_pos;
+    int32_t motor_current_pos;
     int32_t motor_last_pos;
 } m_motor_pid_controller_t;
 
 static m_motor_pid_controller_t m_pid_state;
 static m_motor_dir_t m_motor_current_direction;
-static uint32_t m_next_value;
+static int16_t m_next_adjust;
 
-static int32_t m_pid_controller_next_value(void)
+static int16_t m_pid_controller_next_value(void)
 {
     int32_t p_term;
     int32_t i_term;
     int32_t d_term;
     int32_t error;
     int32_t temp_sum_error;
-    int32_t next_adjust;
+    int16_t next_adjust;
 
     error = (m_pid_state.motor_target_pos - m_pid_state.motor_current_pos);
 
@@ -93,7 +101,7 @@ static int32_t m_pid_controller_next_value(void)
         m_pid_state.pid_controller_sum_error = temp_sum_error;
     }
 
-    d_term = K_D * ((int32_t)m_pid_state.motor_last_pos - m_pid_state.motor_current_pos);
+    d_term = K_D * (m_pid_state.motor_last_pos - m_pid_state.motor_current_pos);
 
     m_pid_state.motor_last_pos = m_pid_state.motor_current_pos;
 
@@ -101,13 +109,16 @@ static int32_t m_pid_controller_next_value(void)
     // Shift down to convert back from fixed-point numbers
     next_adjust = (p_term + i_term + d_term) >> M_FIXED_POINT_SHIFT;
 
-    if (m_pid_state.motor_current_pos + next_adjust > MOTOR_POS_MAX)
+	// Limit the pid retval to the DACC's 12-bit range.
+	// If this happens outside of extreme conditions, then the K terms are too large
+	// or the sum error has become too large
+    if (next_adjust > DACC_NEUT)
     {
-        next_adjust = 0;
+        next_adjust = DACC_NEUT;
     }
-    else if (m_pid_state.motor_current_pos + next_adjust < MOTOR_POS_MIN)
+    else if (next_adjust < (-1 * (int16_t)DACC_NEUT))
     {
-        next_adjust = 0;
+        next_adjust = -DACC_NEUT;
     }
 
     return next_adjust;
@@ -120,7 +131,7 @@ static void m_reset_pid_controller(void)
 
 static void m_dacc_write_next_value(void)
 {
-	DACC->DACC_CDR = m_next_value;
+	DACC->DACC_CDR = DACC_NEUT - m_next_adjust;
 }
 
 static void m_delay_20us(void)
@@ -129,7 +140,7 @@ static void m_delay_20us(void)
   const volatile uint32_t systick_value_at_entry = SysTick->VAL;
   volatile uint32_t systick_current_val;
 
-  /* With a 10.5MHz clock, 210 clk cycles = 20us */
+  /* With a 84MHz clock, 8*210 clk cycles = 20us */
   for(;;)
   {
 	  systick_current_val = SysTick->VAL;
@@ -175,8 +186,7 @@ static int16_t m_read_quadrature_encoder_value(void)
   const volatile uint8_t qenc_lsb = (PIOC->PIO_PDSR >> 1) & 0xFF;
 
   PIOD->PIO_CODR |= M_QENC_RST_N; // Need to reset encoder value
-  const volatile uint32_t systick_value_at_entry = SysTick->VAL;
-  while (systick_value_at_entry != SysTick->VAL);
+  m_delay_20us();
   PIOD->PIO_SODR |= M_QENC_RST_N;
 
   PIOD->PIO_SODR |= M_QENC_OE_N;
@@ -194,29 +204,27 @@ void motor_systick_handle(void)
 	const int16_t quadrature_encoder_value = m_read_quadrature_encoder_value();
 	
 	/* The value of the quadrature encoder counter indicates how much the motor has moved since
-	 * the last time it was polled. */
+	 * the last time it was polled.
+	 * Motor goes to the right -> negative encoder value */
     m_pid_state.motor_current_pos += quadrature_encoder_value;
 
-    // TODO: use quadrature encoder value to update current motor position
-	// Note: the encoder value indicates the amount of rotation done by the motor
-	// from there we need to compute a position somehow
-
-	int32_t pid_adjust = m_pid_controller_next_value();
+	const volatile int16_t pid_adjust = m_pid_controller_next_value();
 	
-	if (pid_adjust < 0 && m_motor_current_direction == MOTOR_DIR_RIGHT)
+	if (pid_adjust > (K_P+K_I+K_D) && m_motor_current_direction == MOTOR_DIR_LEFT)
 	{
 		// Need to switch direction
 		PIOD->PIO_SODR |= M_QENC_DIR;
-		m_motor_current_direction = MOTOR_DIR_LEFT;
+		m_motor_current_direction = MOTOR_DIR_RIGHT;
 	}
-	else if (pid_adjust > 0 && m_motor_current_direction == MOTOR_DIR_LEFT)
+	else if (pid_adjust < -1*(K_P+K_I+K_D) && m_motor_current_direction == MOTOR_DIR_RIGHT)
 	{
 		// Need to switch direction
 		PIOD->PIO_CODR |= M_QENC_DIR;
-		m_motor_current_direction = MOTOR_DIR_RIGHT;
+		m_motor_current_direction = MOTOR_DIR_LEFT;
 	}
 	
-	m_next_value = pid_adjust;
+	m_next_adjust = pid_adjust;
+	m_dacc_write_next_value();
 }
 
 void DACC_Handler(void)
@@ -276,13 +284,13 @@ static void m_setup_pios(void)
   
   // Toggle reset once to ensure the counter is 0
   PIOD->PIO_CODR |= M_QENC_RST_N;
+  m_delay_20us();
   PIOD->PIO_SODR |= M_QENC_RST_N;
 }
 
 void motor_init(void)
 {
-	m_next_value = MOTOR_POS_MAX/2;
-	m_pid_state.motor_target_pos = MOTOR_POS_MAX/2;
+	m_next_adjust = 0;
 
     // Configure PMC
     // Enable clock - use programmable clock so that the DACC output doesn't change too fast
@@ -311,39 +319,41 @@ void motor_init(void)
     // Enable interrupt on EOC
     DACC->DACC_IER = DACC_IER_EOC;
 
+	// Configure Systick settings
+	SysTick->CTRL |= SysTick_CTRL_CLKSOURCE_Msk
+				   | SysTick_CTRL_ENABLE_Msk
+				   | SysTick_CTRL_TICKINT_Msk;
+	SysTick->LOAD = M_SYSTICK_EVERY_100MS & SysTick_LOAD_RELOAD_Msk;
+
 	NVIC_EnableIRQ(DACC_IRQn);
 	NVIC_EnableIRQ(SysTick_IRQn);
 
 	m_setup_pios();
 	m_reset_pid_controller();
 	m_dacc_write_next_value();
+	
+	/*
+	for (uint16_t i = 0; i < 10000; i++)
+	{
+		m_delay_20us();
+	}
+	
+	// DACC module will send the motor flying to the right at the beginning.
+	// We will use the right side as a reference by resetting the counter after some delay.
+	PIOD->PIO_CODR |= M_QENC_RST_N; // Need to reset encoder value
+	m_delay_20us();
+	PIOD->PIO_SODR |= M_QENC_RST_N;
+	*/
 }
 
-void motor_pos_set(uint16_t pos)
+void motor_pos_set(int32_t pos)
 {
-    if (pos > MOTOR_POS_MAX)
-    {
-        return;
-    }
-
-	m_pid_state.motor_target_pos = (uint32_t)pos;
+	m_pid_state.motor_target_pos = (int32_t)pos;
 	m_pid_state.pid_controller_sum_error = 0; // reset the integrator
 }
 
-void motor_pos_adjust(int16_t delta)
+void motor_pos_adjust(int32_t delta)
 {
-	if ((int32_t)m_pid_state.motor_target_pos + delta < (int32_t)MOTOR_POS_MIN)
-	{
-		m_pid_state.motor_target_pos = MOTOR_POS_MIN;
-	}
-	else if ((int32_t)m_pid_state.motor_target_pos + delta > (int32_t)MOTOR_POS_MAX)
-	{
-		m_pid_state.motor_target_pos = MOTOR_POS_MAX;
-	}
-	else
-	{
-		m_pid_state.motor_target_pos += delta;
-	}
-
+	m_pid_state.motor_target_pos += delta;
 	m_pid_state.pid_controller_sum_error = 0; // reset the integrator
 }
