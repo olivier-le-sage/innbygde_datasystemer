@@ -12,8 +12,8 @@
 
 typedef enum
 {
-	M_NOT_BLOCKED = 0,
-	M_BLOCKED,
+	IR_NOT_BLOCKED = 0,
+	IR_BLOCKED,
 } ir_state_t;
 
 void ir_adc_init(void);

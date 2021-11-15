@@ -112,10 +112,10 @@ ir_state_t ir_state_get(void)
 {
 	if (m_compe_count)
 	{
-		return M_BLOCKED;
+		return IR_BLOCKED;
 	}
 	else
 	{
-		return M_NOT_BLOCKED;
+		return IR_NOT_BLOCKED;
 	}
 }

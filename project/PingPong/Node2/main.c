@@ -21,8 +21,9 @@
 #define _delay_us(time_us) {for (uint32_t i = 0; i < (12*time_us); i++){asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");}}
 #define _delay_ms(time_ms) _delay_us((time_ms*1000))
 
-/* TODO: Fine-tune this value for an enhanced user experience */
-#define M_JOYSTICK_IMPACT_ON_SERVO (20)
+/* TODO: Fine-tune these values for an enhanced user experience */
+#define M_JOYSTICK_IMPACT_ON_MOTOR (1000)
+#define M_SLIDER_THRESHOLD_FOR_THRUST (0xFF/2) // 50%
 
 /* Goals are registered when the IR beam is blocked. 1 block = 1 point */
 static uint32_t m_current_game_score;
@@ -36,7 +37,7 @@ static void m_format_hex_byte(char * out, uint8_t value)
 	out[1] = lsb < 0xA ? '0' + lsb : 'A' + (lsb - 0xA);
 }
 
-static void m_toggle_solenoid(void)
+static void m_toggle_solenoid_relay(void)
 {
 	PIOB->PIO_CODR = PIO_CODR_P1;
 	asm("nop");
@@ -104,19 +105,27 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 	{
 		/* Use the joystick direction values to adjust the servo position */
 		joystick_direction_t x_dir = msg->data.data[0];
-		// TODO: should move gradually until stick is in neutral
 		if (x_dir == RIGHT)
 		{
 			servo_position_goto(SERVO_POS_MIN);
+			motor_pos_adjust(M_JOYSTICK_IMPACT_ON_MOTOR);
 		}
 		else if (x_dir == LEFT)
 		{
 			servo_position_goto(SERVO_POS_MAX);
+			motor_pos_adjust(-1 * M_JOYSTICK_IMPACT_ON_MOTOR);
 		}
 		else
 		{
 			servo_position_stop();
 		}
+	}
+	else if (msg->id.value == CAN_SLIDER_MSG_ID && msg->data.len == 2)
+	{
+		if (msg->data.data[0] > M_SLIDER_THRESHOLD_FOR_THRUST)
+		{
+			m_toggle_solenoid_relay();
+		}	
 	}
 }
 
@@ -170,8 +179,8 @@ int main(void)
 	m_score_reset();
 
 	// Enable IO pin 33 for solenoid control
-	PIOB->PIO_PER = PIO_PER_P1;
-	PIOB->PIO_OER = PIO_OER_P1;
+	// PIOB->PIO_PER = PIO_PER_P1;
+	// PIOB->PIO_OER = PIO_OER_P1;
 
 	// Disable watchdog timer (for now)
 	WDT->WDT_MR = WDT_MR_WDDIS;
@@ -188,15 +197,14 @@ int main(void)
 		/* Poll IR to get the user score. */
 		ir_state_t current_state = ir_state_get();
 
-		if (current_state == M_BLOCKED)
+		if (current_state == IR_BLOCKED)
 		{
 			m_current_game_score++;
 			ir_blocked_count_reset();
 		}
 
 		uart_printf("< Current score: %d >\n", m_current_game_score);
-		_delay_ms(500);
-		motor_pos_set(MOTOR_POS_MAX/2 + MOTOR_POS_MAX/3);
-		m_toggle_solenoid();
+		
+		//m_toggle_solenoid();
     }
 }

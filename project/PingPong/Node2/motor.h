@@ -8,5 +8,6 @@
 
 void motor_init(void);
 void motor_pos_set(uint16_t pos);
+void motor_pos_adjust(int16_t delta);
 
 #endif // MOTOR_H__
