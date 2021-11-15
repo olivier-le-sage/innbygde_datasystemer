@@ -34,6 +34,9 @@ static joystick_direction_t m_x_dir;
 static joystick_direction_t m_y_dir;
 static sliders_position_t m_sliders;
 
+static volatile bool m_update_game_score;
+static uint32_t m_current_game_score;
+
 static volatile bool m_timer_tick;
 
 static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
@@ -113,6 +116,12 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
 	printf("RX: ");
 	m_print_can_msg(&msg->id, msg->type == CAN_MSG_TYPE_DATA ? &msg->data : NULL);
+	if (msg->id.value == CAN_SCORE_MSG_ID)
+	{
+		m_current_game_score = *((const uint32_t *) msg->data.data);
+		m_update_game_score = true;
+		printf("New score: %u\n", m_current_game_score);
+	}	
 }
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
@@ -228,6 +237,12 @@ int main(void)
 	{
 		// Wait for interrupt 
 		m_sleep();
+
+		if (m_update_game_score)
+		{
+			m_update_game_score = false;
+			ui_game_screen_update(m_current_game_score);
+		}
 
 		if (m_timer_tick)
 		{

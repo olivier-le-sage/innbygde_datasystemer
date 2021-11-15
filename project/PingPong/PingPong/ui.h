@@ -19,6 +19,7 @@ typedef struct ui_submenu_t ui_submenu_t;
 
 struct ui_submenu_t
 {
+	bool disable_selection;
 	uint8_t num_submenu_options;
 	const char * submenu_options[MAX_SUBMENU_OPTIONS];
 	ui_submenu_t* next[MAX_SUBMENU_OPTIONS];
@@ -34,5 +35,6 @@ typedef enum
 
 bool ui_init(void);
 void ui_issue_cmd(ui_cmd_t cmd);
+void ui_game_screen_update(uint32_t score);
 
 #endif /* UI_H_ */

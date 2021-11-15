@@ -10,6 +10,17 @@
 #include "ping_pong.h"
 #include <stdlib.h>
 
+// Max text size: length of "Score: " + max number length + terminator
+#define M_SCORE_TEXT_MAX_LEN (7 + 10 + 1)
+
+static char m_score_text[M_SCORE_TEXT_MAX_LEN];
+
+static ui_submenu_t m_game_screen  = {
+	.disable_selection = true,
+	.num_submenu_options = 1,
+	.submenu_options[0] = m_score_text,
+};
+
 static ui_submenu_t m_final_menu = {
 	.num_submenu_options = 1,
 	.submenu_options[0] = "(1) :(",
@@ -29,6 +40,7 @@ static ui_submenu_t m_main_menu = {
 	.submenu_options[2]  = "(3) PLAY WITH FIRE",
 	.submenu_options[3]  = "(4) LAUNCH THE NUKES",
 	.submenu_options[4]  = "(5) EXIT",
+	.next[0] 			 = &m_game_screen,
 	.next[3]             = &m_next_menu,
 };
 
@@ -43,7 +55,8 @@ void m_update_display(void)
 	for (uint8_t i = 0; i < mp_current_menu->num_submenu_options; i++)
 	{
 		oled_goto_line(i);
-		oled_printf(mp_current_menu->submenu_options[i], (i == m_current_selection));
+		oled_printf(mp_current_menu->submenu_options[i],
+				    !mp_current_menu->disable_selection && (i == m_current_selection));
 	}
 }
 
@@ -56,6 +69,8 @@ bool ui_init(void)
 
 	m_current_selection = 0;
 	mp_current_menu = &m_main_menu;
+
+	ui_game_screen_update(0);
 
 	return true;
 }
@@ -113,4 +128,9 @@ void ui_issue_cmd(ui_cmd_t cmd)
 	}
 	
 	m_update_display();
+}
+
+void ui_game_screen_update(uint32_t score)
+{
+	snprintf(m_score_text, M_SCORE_TEXT_MAX_LEN - 1, "Score: %u", score); 
 }
