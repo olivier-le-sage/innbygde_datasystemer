@@ -8,10 +8,12 @@
 #include "ui.h"
 #include "oled.h"
 #include "ping_pong.h"
+#include "utils.h"
 #include <stdlib.h>
 
-// Max text size: length of "Score: " + max number length + terminator
-#define M_SCORE_TEXT_MAX_LEN (7 + 10 + 1)
+// Max text size: length of prelude + max number length + terminator
+#define M_SCORE_TEXT "Score: "
+#define M_SCORE_TEXT_MAX_LEN (sizeof(M_SCORE_TEXT) + sizeof(STRINGIFY(UINT32_MAX)) - 1)
 
 static char m_score_text[M_SCORE_TEXT_MAX_LEN];
 
@@ -132,5 +134,5 @@ void ui_issue_cmd(ui_cmd_t cmd)
 
 void ui_game_screen_update(uint32_t score)
 {
-	snprintf(m_score_text, M_SCORE_TEXT_MAX_LEN - 1, "Score: %lu", score); 
+	snprintf(m_score_text, M_SCORE_TEXT_MAX_LEN - 1, M_SCORE_TEXT "%lu", score); 
 }
