@@ -106,6 +106,27 @@ static inline uint16_t m_map_uint8_to_servo_position(uint8_t value)
 	return (uint16_t) (((uint32_t) (SERVO_POS_MAX - SERVO_POS_MIN) * (uint32_t) value) / (uint32_t) UINT8_MAX);
 }
 
+#define M_SERVO_VALUE_HISTORY_LEN 4
+
+static void m_update_servo_position(uint8_t new_value)
+{
+	static uint8_t last_values[M_SERVO_VALUE_HISTORY_LEN] = { UINT8_MAX / 2 };
+	static uint32_t value_pos;
+
+	uint32_t value_sum = 0;
+
+	last_values[value_pos] = new_value;
+	value_pos = (value_pos + 1) % (M_SERVO_VALUE_HISTORY_LEN);
+
+	for (uint32_t i = 0; i < M_SERVO_VALUE_HISTORY_LEN; i++)
+	{
+		value_sum += last_values[i];
+	}
+
+	value_sum /= M_SERVO_VALUE_HISTORY_LEN;
+	servo_position_set(m_map_uint8_to_servo_position((uint8_t) value_sum));
+}
+
 static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
 	static joystick_direction_t last_y_dir = UP;
@@ -142,7 +163,7 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 	else if (msg->id.value == CAN_SLIDER_MSG_ID && msg->data.len == 2)
 	{
 		uint8_t left_slider_pos = msg->data.data[1];
-		servo_position_set(m_map_uint8_to_servo_position(left_slider_pos));
+		m_update_servo_position(UINT8_MAX - left_slider_pos);
 	}
 }
 
