@@ -1,6 +1,7 @@
 #include "motor.h"
 #include "sam.h"
 #include "timer.h"
+#include "systick.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -182,11 +183,8 @@ static int16_t m_read_quadrature_encoder_value(void)
   return (int16_t)((qenc_msb << 8) | qenc_lsb);
 }
 
-void motor_systick_handle(void)
+static void m_systick_handle(void)
 {
-	// Vi faar ikke systick IRQ mens CPU sover.
-	// Bruker vi det klokt, er det fremdeles miljoevennlig :)
-
 	const int16_t quadrature_encoder_value = m_read_quadrature_encoder_value();
 	
 	/* The value of the quadrature encoder counter indicates how much the motor has moved since
@@ -301,23 +299,19 @@ void motor_init(void)
     // Enable interrupt on EOC
     DACC->DACC_IER = DACC_IER_EOC;
 
-	// Configure Systick settings
-	//SysTick->CTRL |= SysTick_CTRL_CLKSOURCE_Msk
-				   //| SysTick_CTRL_ENABLE_Msk
-				   //| SysTick_CTRL_TICKINT_Msk;
-	//SysTick->LOAD = M_SYSTICK_EVERY_100MS & SysTick_LOAD_RELOAD_Msk;
-
 	NVIC_EnableIRQ(DACC_IRQn);
-	NVIC_EnableIRQ(SysTick_IRQn);
 
 	m_setup_pios();
 	m_reset_pid_controller();
-	m_dacc_write_next_value();
 	
+    (void) systick_cb_register(m_systick_handle);
+
+	/*
 	for (uint16_t i = 0; i < 10000; i++)
 	{
 		m_delay_20us();
 	}
+	*/
 	
 	// DACC module will send the motor flying to the right at the beginning.
 	// We will use the right side as a reference by resetting the counter after some delay.

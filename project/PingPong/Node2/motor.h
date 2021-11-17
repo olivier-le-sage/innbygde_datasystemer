@@ -6,6 +6,5 @@
 void motor_init(void);
 void motor_speed_set(int32_t speed);
 void motor_pos_adjust(int32_t delta);
-void motor_systick_handle(void);
 
 #endif // MOTOR_H__

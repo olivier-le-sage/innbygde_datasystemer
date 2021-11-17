@@ -171,15 +171,9 @@ static void debug_output_mck_on_pin(void)
 	PMC->PMC_SCER = PMC_SCER_PCK1;
 }
 
-static void m_systick_handler(void)
-{
-	motor_systick_handle();
-}
-
 static void m_systick_init(void)
 {
 	const systick_init_t params = {
-		.cb = m_systick_handler,
 		.period_10ms = M_SYSTICK_PERIOD_10MS
 	};
 	systick_init(&params);
@@ -201,17 +195,25 @@ int main(void)
 	// Disable watchdog timer (for now)
 	WDT->WDT_MR = WDT_MR_WDDIS;
 
+	m_systick_init();
+
 	uart_init();
 	ir_adc_init();
 	servo_init();
 	m_can_init();
 	motor_init();
-	m_systick_init();
+
+	systick_enable();
 
     /* Replace with your application code */
     while (1)
     {
 		/* Poll IR to get the user score. */
+		if (ir_triggered_get_reset())
+		{
+			m_current_game_score++;
+		}
+		/*
 		ir_state_t current_state = ir_state_get();
 
 		if (current_state == IR_BLOCKED)
@@ -221,7 +223,7 @@ int main(void)
 		}
 
 		uart_printf("< Current score: %d >\n", m_current_game_score);
-		
-		m_toggle_solenoid_relay();
+		*/	
+		// m_toggle_solenoid_relay();
     }
 }

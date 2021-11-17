@@ -9,7 +9,7 @@
 #include <sam3x8e.h>
 #include <string.h>
 #include <stdbool.h>
-
+#include "systick.h"
 
 /* Threshold at which the IR is considered blocked. Note: Max 12 bits. */
 #define M_SAMPLE_THRESHOLD (0xFFF/10)
@@ -17,19 +17,22 @@
 /* Number of consecutive samples required to trigger an interrupt */
 #define M_SAMPLE_NUM_THRESHOLD 1 // cannot be zero
 
-#define M_EVENT_MIN_PERIOD 500
+#define M_EVENT_MIN_PERIOD_10MS 50
 
 /* ADC channel used for the IR */
 #define M_NUM_CHANNELS   (1)
 #define M_IR_ADC_CHANNEL (0)
 
-static uint32_t m_compe_count;
+static volatile bool m_triggered;
+static volatile uint32_t m_systick_cooldown_remaining;
+static uint32_t m_systick_cooldown_period;
 
-
-bool hacky_cooldown_timer(void)
+static void m_systick_handle(void)
 {
-	// Read overflow status of servo timer (clears on read)
-	return TC0->TC_CHANNEL[0].TC_SR & TC_SR_CPCS;
+	if (m_systick_cooldown_remaining)
+	{
+		m_systick_cooldown_remaining--;
+	}
 }
 
 void ADC_Handler(void)
@@ -37,19 +40,22 @@ void ADC_Handler(void)
 	// read out the status register
 	volatile uint32_t interrupt_status = ADC->ADC_ISR;
 
-	if (interrupt_status & ADC_ISR_COMPE)
+	if ((interrupt_status & ADC_ISR_COMPE) && !m_systick_cooldown_remaining)
 	{
-		if (hacky_cooldown_timer())
-		{
-			m_compe_count++;
-		}
+		m_triggered = true;
+		m_systick_cooldown_remaining = m_systick_cooldown_period;
 	}
 }
 
 void ir_adc_init(void)
 {
 	// reset internal state
-	m_compe_count = 0;
+	m_triggered = false;
+	m_systick_cooldown_remaining = 0;
+	m_systick_cooldown_period = M_EVENT_MIN_PERIOD_10MS / systick_period_10ms_get();
+
+	// Register systick callback
+	systick_cb_register(m_systick_handle);
 
 	PMC->PMC_PCR = PMC_PCR_PID(ID_ADC) |
 				   PMC_PCR_CMD |
@@ -98,6 +104,17 @@ void ir_adc_init(void)
 	ADC->ADC_CR |= ADC_CR_START;
 }
 
+bool ir_triggered_get_reset(void)
+{
+	bool was_triggered;
+	__disable_irq();
+	was_triggered = m_triggered;
+	m_triggered = false;
+	__enable_irq();
+	return was_triggered;
+}
+
+/*
 uint32_t ir_blocked_count_get(void)
 {
 	return m_compe_count;
@@ -119,3 +136,4 @@ ir_state_t ir_state_get(void)
 		return IR_NOT_BLOCKED;
 	}
 }
+*/
