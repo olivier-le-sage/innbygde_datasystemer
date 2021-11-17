@@ -104,7 +104,7 @@ static int16_t m_pid_controller_next_value(void)
 
     m_pid_state.motor_last_pos = m_pid_state.motor_current_pos;
 
-    // Sum the P and I terms to obtain the output
+    // Sum the P, D and I terms to obtain the output
     // Shift down to convert back from fixed-point numbers
     next_adjust = (p_term + i_term + d_term) >> M_FIXED_POINT_SHIFT;
 
@@ -118,7 +118,7 @@ static void m_reset_pid_controller(void)
 
 static void m_dacc_write_next_value(void)
 {
-	DACC->DACC_CDR = m_next_adjust >> 2;
+	DACC->DACC_CDR = m_next_adjust;
 }
 
 static void m_delay_20us(void)
@@ -127,14 +127,14 @@ static void m_delay_20us(void)
   const volatile uint32_t systick_value_at_entry = SysTick->VAL;
   volatile uint32_t systick_current_val;
 
-  /* With a 84MHz clock, 8*210 clk cycles = 20us */
+  /* With a 10.5MHz clock, 210 clk cycles = 20us */
   for(;;)
   {
 	  systick_current_val = SysTick->VAL;
 	  
 	  if (systick_current_val < systick_value_at_entry)
 	  {
-		  if ((systick_value_at_entry - systick_current_val) >= 210 * 8)
+		  if ((systick_value_at_entry - systick_current_val) >= 210)
 		  {
 			  break;
 		  }
@@ -197,12 +197,12 @@ static void m_systick_handle(void)
 	if (pid_adjust < 0)
 	{
 		PIOD->PIO_SODR |= M_QENC_DIR;
-		m_next_adjust = pid_adjust;
+		m_next_adjust = -1 * pid_adjust;
 	}
 	else
 	{
 		PIOD->PIO_CODR |= M_QENC_DIR;
-		m_next_adjust = -1 * pid_adjust;
+		m_next_adjust = pid_adjust;
 	}
 
 	m_dacc_write_next_value();
@@ -303,7 +303,8 @@ void motor_init(void)
 
 	m_setup_pios();
 	m_reset_pid_controller();
-	
+	m_dacc_write_next_value();
+
     (void) systick_cb_register(m_systick_handle);
 
 	/*
