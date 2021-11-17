@@ -2,8 +2,7 @@
 #include "sam.h"
 
 // SysTick default clock is MCK (?)
-#define M_SYSTICK_TENMS       (0x2904)
-#define M_SYSTICK_EVERY_100MS ((M_SYSTICK_TENMS - 1) * 100)
+#define M_SYSTICK_TENMS       (0x2904 * 10)
 
 #define M_MAX_CALLBACKS 5
 
@@ -34,7 +33,7 @@ void systick_init(const systick_init_t * params)
 
 void systick_enable(void)
 {
-    uint32_t load_value = m_period_10ms * (M_SYSTICK_TENMS - 1);
+    uint32_t load_value = m_period_10ms * M_SYSTICK_TENMS - 1;
 
     // Configure Systick settings
 	SysTick->LOAD = load_value & SysTick_LOAD_RELOAD_Msk;
@@ -54,6 +53,7 @@ bool systick_cb_register(systick_cb_t cb)
     {
         m_callbacks[m_callback_count] = cb;
         m_callback_count++;
+		return true;
     }
     else
     {

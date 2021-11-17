@@ -13,9 +13,9 @@
 // Parameters for the PID controller. TODO: tune
 // The representation used is fixed-point with a shift of 7 (so 2^7 = 128 <=> 1)
 #define M_FIXED_POINT_SHIFT 7
-#define K_P 2  // = 0.6640625
-#define K_I 0   // = 0.015625
-#define K_D 4  // = 0.5859375
+#define K_P 10  // = 0.6640625  (20)
+#define K_I 1   // = 0.015625  (0)
+#define K_D 20  // = 0.5859375  (4)
 
 #define PID_MAX_SUM_ERROR (INT32_MAX / (K_P + 1))
 #define PID_MAX_ERROR     (INT32_MAX / (K_I + 1))
@@ -67,7 +67,7 @@ static int16_t m_pid_controller_next_value(void)
     int32_t d_term;
     int32_t error;
     int32_t temp_sum_error;
-    int16_t next_adjust;
+    int32_t next_adjust;
 
     error = (m_pid_state.motor_target_pos - m_pid_state.motor_current_pos);
 
@@ -106,9 +106,9 @@ static int16_t m_pid_controller_next_value(void)
 
     // Sum the P, D and I terms to obtain the output
     // Shift down to convert back from fixed-point numbers
-    next_adjust = (p_term + i_term + d_term) >> M_FIXED_POINT_SHIFT;
+    next_adjust = (p_term + i_term + d_term) / (int32_t)(1 << M_FIXED_POINT_SHIFT);
 
-    return next_adjust;
+    return (int16_t)next_adjust;
 }
 
 static void m_reset_pid_controller(void)
@@ -214,7 +214,7 @@ void DACC_Handler(void)
 
     if ((status & DACC_ISR_EOC) && (status & DACC_ISR_TXRDY))
     {
-		m_dacc_write_next_value();
+		// m_dacc_write_next_value();
 	}
 }
 
@@ -305,8 +305,6 @@ void motor_init(void)
 	m_reset_pid_controller();
 	m_dacc_write_next_value();
 
-    (void) systick_cb_register(m_systick_handle);
-
 	/*
 	for (uint16_t i = 0; i < 10000; i++)
 	{
@@ -319,6 +317,8 @@ void motor_init(void)
 	PIOD->PIO_CODR |= M_QENC_RST_N; // Need to reset encoder value
 	m_delay_20us();
 	PIOD->PIO_SODR |= M_QENC_RST_N;
+
+    (void) systick_cb_register(m_systick_handle);
 }
 
 
@@ -341,6 +341,10 @@ void motor_speed_set(int32_t speed)
 
 void motor_pos_adjust(int32_t delta)
 {
-	m_pid_state.motor_target_pos += delta;
-	m_pid_state.pid_controller_sum_error = 0; // reset the integrator
+	if (m_pid_state.motor_target_pos + delta < MOTOR_POS_MAX_ABS
+	  && m_pid_state.motor_target_pos - delta > (-1 * MOTOR_POS_MAX_ABS))
+	{
+		m_pid_state.motor_target_pos += delta;
+		m_pid_state.pid_controller_sum_error = 0; // reset the integrator
+	}
 }
