@@ -209,21 +209,13 @@ int main(void)
     while (1)
     {
 		/* Poll IR to get the user score. */
-		if (ir_triggered_get_reset())
+		// FIXME: should NOT call this frequently as it disables interrupts
+		//if (ir_triggered_get_reset())
 		{
 			m_current_game_score++;
 		}
-		/*
-		ir_state_t current_state = ir_state_get();
-
-		if (current_state == IR_BLOCKED)
-		{
-			m_current_game_score++;
-			ir_blocked_count_reset();
-		}
-
+		
+		
 		uart_printf("< Current score: %d >\n", m_current_game_score);
-		*/	
-		// m_toggle_solenoid_relay();
     }
 }

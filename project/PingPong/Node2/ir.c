@@ -17,7 +17,7 @@
 /* Number of consecutive samples required to trigger an interrupt */
 #define M_SAMPLE_NUM_THRESHOLD 1 // cannot be zero
 
-#define M_EVENT_MIN_PERIOD_10MS 50
+#define M_EVENT_MIN_PERIOD_10MS 500
 
 /* ADC channel used for the IR */
 #define M_NUM_CHANNELS   (1)
@@ -113,27 +113,3 @@ bool ir_triggered_get_reset(void)
 	__enable_irq();
 	return was_triggered;
 }
-
-/*
-uint32_t ir_blocked_count_get(void)
-{
-	return m_compe_count;
-}
-
-void ir_blocked_count_reset(void)
-{
-	m_compe_count = 0;
-}
-
-ir_state_t ir_state_get(void)
-{
-	if (m_compe_count)
-	{
-		return IR_BLOCKED;
-	}
-	else
-	{
-		return IR_NOT_BLOCKED;
-	}
-}
-*/
