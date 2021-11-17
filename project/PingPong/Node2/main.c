@@ -19,9 +19,12 @@
 #include "systick.h"
 
 /* TODO: Fine-tune these values for an enhanced user experience */
-#define M_JOYSTICK_IMPACT_ON_MOTOR (100)
+#define M_JOYSTICK_IMPACT_ON_MOTOR (2000)
 #define M_SLIDER_THRESHOLD_FOR_THRUST (0xFF/2) // 50%
 #define M_SYSTICK_PERIOD_10MS (10)
+
+// Pin used to control the solenoid
+#define M_SOLENOID_PIN (1 << 3) // PORTD pin used to toggle solenoid
 
 /* Goals are registered when the IR beam is blocked. 1 block = 1 point */
 static uint32_t m_current_game_score;
@@ -37,13 +40,13 @@ static void m_format_hex_byte(char * out, uint8_t value)
 
 static void m_toggle_solenoid_relay(void)
 {
-	PIOB->PIO_CODR = PIO_CODR_P1;
+	PIOD->PIO_CODR |= M_SOLENOID_PIN;
 	asm("nop");
 	asm("nop");
 	asm("nop");
 	asm("nop");
 	asm("nop");
-	PIOB->PIO_SODR = PIO_SODR_P1;
+	PIOD->PIO_SODR |= M_SOLENOID_PIN;
 }
 
 static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
@@ -115,6 +118,7 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 		}
 		else
 		{
+			motor_speed_set(0);
 			servo_position_stop();
 		}
 	}
@@ -123,7 +127,7 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 		if (msg->data.data[0] > M_SLIDER_THRESHOLD_FOR_THRUST)
 		{
 			m_toggle_solenoid_relay();
-		}	
+		}
 	}
 }
 
@@ -218,6 +222,6 @@ int main(void)
 
 		uart_printf("< Current score: %d >\n", m_current_game_score);
 		
-		//m_toggle_solenoid();
+		m_toggle_solenoid_relay();
     }
 }
