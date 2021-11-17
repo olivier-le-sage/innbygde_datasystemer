@@ -62,10 +62,10 @@ void servo_init(void)
 
 	  TC2->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKDIS;
 
-    // Configure output pin for TC1 TIOA
-    PIOB->PIO_IDR = PIO_PB25B_TIOA0;   // Disable interrupt on pin
-    PIOB->PIO_ABSR |= PIO_PB25B_TIOA0; // Assign pin to peripheral B
-    PIOB->PIO_PDR = PIO_PB25B_TIOA0;   // Let peripheral control pin
+    // Use PC28/PWM3/TIOA7
+    PIOC->PIO_IDR = PIO_PC28B_TIOA7;   // Disable interrupt on pin
+    PIOC->PIO_ABSR |= PIO_PC28B_TIOA7; // Assign pin to peripheral B
+    PIOC->PIO_PDR = PIO_PC28B_TIOA7;   // Let peripheral control pin
 
     TC2->TC_CHANNEL[0].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK2 |
                    TC_CMR_WAVE |
