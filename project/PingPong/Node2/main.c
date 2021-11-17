@@ -118,7 +118,6 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 		}
 		else
 		{
-			motor_speed_set(0);
 			servo_position_stop();
 		}
 	}
