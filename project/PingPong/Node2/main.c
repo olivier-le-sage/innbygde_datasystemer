@@ -101,6 +101,11 @@ static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 	}
 }
 
+static inline uint16_t m_map_uint8_to_servo_position(uint8_t value)
+{
+	return (uint16_t) (((uint32_t) (SERVO_POS_MAX - SERVO_POS_MIN) * (uint32_t) value) / (uint32_t) UINT8_MAX);
+}
+
 static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 {
 	static joystick_direction_t last_y_dir = UP;
@@ -136,6 +141,8 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 	}
 	else if (msg->id.value == CAN_SLIDER_MSG_ID && msg->data.len == 2)
 	{
+		uint8_t left_slider_pos = msg->data.data[1];
+		servo_position_set(m_map_uint8_to_servo_position(left_slider_pos));
 	}
 }
 
