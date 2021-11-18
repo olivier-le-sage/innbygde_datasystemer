@@ -18,6 +18,7 @@
 /* Message IDs used. */
 #define CAN_JOYSTICK_MSG_ID (0xF)
 #define CAN_SLIDER_MSG_ID   (0xE)
+#define CAN_SCORE_MSG_ID    (0xA)
 
 typedef void (*can_rx_handler_t)(uint8_t rx_buf_no, const can_msg_rx_t * msg);
 typedef void (*can_tx_handler_t)(uint8_t tx_buf_no);

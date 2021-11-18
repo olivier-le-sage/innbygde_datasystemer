@@ -28,9 +28,24 @@ extern joystick_direction_t joystick_y_dir;
 
 // Pin used to control the solenoid
 #define M_SOLENOID_PIN (1 << 3) // PORTD pin used to toggle solenoid // PIN28 // Arduino pin 27
+#define M_SCORE_TXBUF_NO (0)
 
 /* Goals are registered when the IR beam is blocked. 1 block = 1 point */
 static uint32_t m_current_game_score;
+static volatile bool m_send_game_score;
+static volatile bool m_send_game_score_in_progress;
+
+static inline bool atomic_set(volatile bool * flag)
+{
+	bool prev_value;
+
+	__disable_irq();
+	prev_value = *flag;
+	*flag = true;
+	__enable_irq();
+
+	return prev_value;
+}
 
 static void m_format_hex_byte(char * out, uint8_t value)
 {
@@ -162,7 +177,10 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
 {
-	uart_printf("TX complete.");
+	if (tx_buf_no == M_SCORE_TXBUF_NO)
+	{
+		m_send_game_score_in_progress = false;
+	}
 }
 
 static void m_can_init(void)
@@ -192,12 +210,32 @@ static void m_score_reset(void)
 	m_current_game_score = 0;
 }
 
-static void debug_output_mck_on_pin(void)
+static bool m_score_send(void)
 {
-	// Configure PCK1 to output MCK
-	PMC->PMC_PCK[1] = PMC_PCK_CSS_MCK | PMC_PCK_PRES_CLK_1;
-	// Enable PCK1 output
-	PMC->PMC_SCER = PMC_SCER_PCK1;
+	static can_id_t id = { .extended = false, .value = CAN_SCORE_MSG_ID };
+	static uint8_t score[sizeof(uint32_t)];
+	static can_data_t data = { .data = score, .len = sizeof(score) };
+
+	if (!atomic_set(&m_send_game_score_in_progress))
+	{
+		return false;
+	}
+
+	uint8_t rc = can_data_send(M_SCORE_TXBUF_NO, &id, &data);
+	if (rc != CAN_SUCCESS)
+	{
+		m_send_game_score_in_progress = false;
+		return false;
+	}
+
+	return true;
+}
+
+static void m_sleep(void)
+{
+	(void) can_sleep();
+	power_sleep();
+	(void) can_wake();
 }
 
 static void m_systick_init(void)
@@ -212,8 +250,6 @@ int main(void)
 {
     /* Initialize the SAM system */
     SystemInit();
-
-	debug_output_mck_on_pin();
 
 	m_score_reset();
 
@@ -236,16 +272,24 @@ int main(void)
 
 	systick_enable();
 
+	m_send_game_score = true;
 
-    /* Replace with your application code */
     while (1)
     {
 		/* Poll IR to get the user score. */
 		if (ir_triggered_get_reset())
 		{
 			m_current_game_score++;
+			m_send_game_score = true;
 		}
 
-		uart_printf("< Current score: %d >\n", m_current_game_score);
+		if (m_send_game_score)
+		{
+			m_send_game_score = !m_score_send();
+		}
+		else
+		{
+			m_sleep();
+		}
     }
 }

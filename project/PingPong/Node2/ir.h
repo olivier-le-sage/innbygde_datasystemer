@@ -11,16 +11,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef enum
-{
-	IR_NOT_BLOCKED = 0,
-	IR_BLOCKED,
-} ir_state_t;
-
 void ir_adc_init(void);
-uint32_t ir_blocked_count_get(void);
-ir_state_t ir_state_get(void);
-void ir_blocked_count_reset(void);
 bool ir_triggered_get_reset(void);
 
 #endif /* IR_H_ */
