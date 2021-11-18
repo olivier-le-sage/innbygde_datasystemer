@@ -25,28 +25,28 @@
 static volatile int16_t m_current_servo_position;
 static volatile int16_t m_target_servo_position = SERVO_TARGET_POS_INVALID;
 
-void TC2_Handler(void)
+void TC0_Handler(void)
 {
-    uint32_t status = TC2->TC_CHANNEL[0].TC_SR;
+    uint32_t status = TC0->TC_CHANNEL[0].TC_SR;
     if (status & TC_SR_CPCS &&
         m_target_servo_position != SERVO_TARGET_POS_INVALID)
     {
-        if (m_current_servo_position - 2 < m_target_servo_position)
+        if (m_current_servo_position < m_target_servo_position)
         {
-            m_current_servo_position += 3;
-            TC2->TC_CHANNEL[0].TC_RA =
+            m_current_servo_position++; // += 5;
+            TC0->TC_CHANNEL[0].TC_RA =
                 TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS, TC_RC_VALUE);
         }
-        else if (m_current_servo_position + 2 > m_target_servo_position)
+        else if (m_current_servo_position > m_target_servo_position)
         {
-            m_current_servo_position -= 3;
-            TC2->TC_CHANNEL[0].TC_RA =
+            m_current_servo_position--; //  -= 5;
+            TC0->TC_CHANNEL[0].TC_RA =
                 TC_RA_VALUE(m_current_servo_position + SERVO_MIN_STEPS, TC_RC_VALUE);
         }
         else
         {
             m_target_servo_position = SERVO_TARGET_POS_INVALID;
-            TC2->TC_CHANNEL[0].TC_IDR = TC_IDR_CPCS;
+            TC0->TC_CHANNEL[0].TC_IDR = TC_IDR_CPCS;
         }
     }
 }
@@ -54,33 +54,33 @@ void TC2_Handler(void)
 void servo_init(void)
 {
     // Enable clock
-    PMC->PMC_PCR = PMC_PCR_PID(ID_TC2) |
+    PMC->PMC_PCR = PMC_PCR_PID(ID_TC0) |
                    PMC_PCR_CMD |
                    PMC_PCR_DIV_PERIPH_DIV_MCK |
                    PMC_PCR_EN;
-    PMC->PMC_PCER0 |= (uint32_t) (1 << ID_TC2);
+    PMC->PMC_PCER0 |= (uint32_t) (1 << ID_TC0);
 
-	  TC2->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKDIS;
+	TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKDIS;
 
     // Use PC28/PWM3/TIOA7
-    PIOC->PIO_IDR = PIO_PC28B_TIOA7;   // Disable interrupt on pin
-    PIOC->PIO_ABSR |= PIO_PC28B_TIOA7; // Assign pin to peripheral B
-    PIOC->PIO_PDR = PIO_PC28B_TIOA7;   // Let peripheral control pin
+    PIOB->PIO_IDR = PIO_PB25B_TIOA0;   // Disable interrupt on pin
+    PIOB->PIO_ABSR |= PIO_PB25B_TIOA0; // Assign pin to peripheral B
+    PIOB->PIO_PDR = PIO_PB25B_TIOA0;   // Let peripheral control pin
 
-    TC2->TC_CHANNEL[0].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK2 |
+    TC0->TC_CHANNEL[0].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK2 |
                    TC_CMR_WAVE |
                    TC_CMR_WAVSEL_UP_RC |
                    TC_CMR_ACPA_SET |
                    TC_CMR_ACPC_CLEAR;
 
     // Reset counter on this value
-    TC2->TC_CHANNEL[0].TC_RC = SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK;
+    TC0->TC_CHANNEL[0].TC_RC = SERVO_PWM_PERIOD * MCK_8_FACTOR_FOR_TICK;
     // Set neutral position
-    TC2->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(SERVO_NEUTRAL_STEPS, TC_RC_VALUE);
+    TC0->TC_CHANNEL[0].TC_RA = TC_RA_VALUE(SERVO_NEUTRAL_STEPS, TC_RC_VALUE);
 
-    TC2->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
+    TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
 
-    NVIC_EnableIRQ(TC2_IRQn);
+    NVIC_EnableIRQ(TC0_IRQn);
 
     m_current_servo_position = SERVO_NEUTRAL_POS;
 }
@@ -91,7 +91,7 @@ void servo_position_adjust(int16_t delta)
         && ( m_current_servo_position + SERVO_MIN_STEPS + delta <= SERVO_MAX_STEPS))
     {
         m_current_servo_position += delta;
-        TC2->TC_CHANNEL[0].TC_RA =
+        TC0->TC_CHANNEL[0].TC_RA =
             TC_RA_VALUE((uint16_t)m_current_servo_position + SERVO_MIN_STEPS, TC_RC_VALUE);
     }
 }
@@ -103,18 +103,18 @@ void servo_position_goto(uint16_t position)
         return;
     }
 
-    NVIC_DisableIRQ(TC2_IRQn);
+    NVIC_DisableIRQ(TC0_IRQn);
     m_target_servo_position = position;
-    TC2->TC_CHANNEL[0].TC_IER = TC_IER_CPCS;
-    NVIC_EnableIRQ(TC2_IRQn);
+    TC0->TC_CHANNEL[0].TC_IER = TC_IER_CPCS;
+    NVIC_EnableIRQ(TC0_IRQn);
 }
 
 void servo_position_stop(void)
 {
-    NVIC_DisableIRQ(TC2_IRQn);
+    NVIC_DisableIRQ(TC0_IRQn);
     m_target_servo_position = SERVO_TARGET_POS_INVALID;
-    TC2->TC_CHANNEL[0].TC_IDR = TC_IDR_CPCS;
-    NVIC_EnableIRQ(TC2_IRQn);
+    TC0->TC_CHANNEL[0].TC_IDR = TC_IDR_CPCS;
+    NVIC_EnableIRQ(TC0_IRQn);
 }
 
 void servo_position_set(uint16_t position)
@@ -124,6 +124,6 @@ void servo_position_set(uint16_t position)
         return;
     }
 
-    TC2->TC_CHANNEL[0].TC_RA =
+    TC0->TC_CHANNEL[0].TC_RA =
         TC_RA_VALUE(position + SERVO_MIN_STEPS, TC_RC_VALUE);
 }

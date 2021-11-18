@@ -17,9 +17,12 @@
 #include "CAN.h"
 #include "motor.h"
 #include "systick.h"
+#include "joystick_state.h"
+
+extern joystick_direction_t joystick_x_dir;
+extern joystick_direction_t joystick_y_dir;
 
 /* TODO: Fine-tune these values for an enhanced user experience */
-#define M_JOYSTICK_IMPACT_ON_MOTOR (500)
 #define M_SLIDER_THRESHOLD_FOR_THRUST (0xFF/2) // 50%
 #define M_SYSTICK_PERIOD_10MS (10)
 
@@ -41,7 +44,7 @@ static void m_format_hex_byte(char * out, uint8_t value)
 static void m_toggle_solenoid_relay(void)
 {
 	PIOD->PIO_CODR |= M_SOLENOID_PIN;
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 100000; i++)
 	{
 		asm("nop");
 		asm("nop");
@@ -106,7 +109,7 @@ static inline uint16_t m_map_uint8_to_servo_position(uint8_t value)
 	return (uint16_t) (((uint32_t) (SERVO_POS_MAX - SERVO_POS_MIN) * (uint32_t) value) / (uint32_t) UINT8_MAX);
 }
 
-#define M_SERVO_VALUE_HISTORY_LEN 4
+#define M_SERVO_VALUE_HISTORY_LEN 2
 
 static void m_update_servo_position(uint8_t new_value)
 {
@@ -136,29 +139,19 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 
 	if (msg->id.value == CAN_JOYSTICK_MSG_ID && msg->data.len == 2)
 	{
-		/* Use the joystick direction values to adjust the servo position */
-		joystick_direction_t x_dir = msg->data.data[0];
-		if (x_dir == RIGHT)
+		/* Save joystick position. These values will be used elsewhere */
+		joystick_x_dir = msg->data.data[0];
+		joystick_y_dir = msg->data.data[1];
+		
+		if (joystick_y_dir == UP && last_y_dir == UP)
 		{
-			//servo_position_goto(SERVO_POS_MIN);
-			motor_pos_adjust(M_JOYSTICK_IMPACT_ON_MOTOR);
-		}
-		else if (x_dir == LEFT)
-		{
-			//servo_position_goto(SERVO_POS_MAX);
-			motor_pos_adjust(-1 * M_JOYSTICK_IMPACT_ON_MOTOR);
+			PIOD->PIO_CODR |= M_SOLENOID_PIN;
 		}
 		else
 		{
-			servo_position_stop();
+			PIOD->PIO_SODR |= M_SOLENOID_PIN;
 		}
-		
-		joystick_direction_t y_dir = msg->data.data[1];
-		if (y_dir == UP && last_y_dir != UP)
-		{
-			m_toggle_solenoid_relay();
-		}
-		last_y_dir = y_dir;
+		last_y_dir = joystick_y_dir;
 	}
 	else if (msg->id.value == CAN_SLIDER_MSG_ID && msg->data.len == 2)
 	{
@@ -234,7 +227,7 @@ int main(void)
 	servo_init();
 	m_can_init();
 	motor_init();
-	
+
 	// Enable IO pin  for solenoid control
 	PIOD->PIO_PER |= M_SOLENOID_PIN;
 	PIOD->PIO_OER |= M_SOLENOID_PIN;
@@ -242,19 +235,17 @@ int main(void)
 	PIOD->PIO_ODR &= ~M_SOLENOID_PIN;
 
 	systick_enable();
-	
+
 
     /* Replace with your application code */
     while (1)
     {
 		/* Poll IR to get the user score. */
-		// FIXME: should NOT call this frequently as it disables interrupts
-		//if (ir_triggered_get_reset())
+		if (ir_triggered_get_reset())
 		{
 			m_current_game_score++;
 		}
-		
-		
-		//uart_printf("< Current score: %d >\n", m_current_game_score);
+
+		uart_printf("< Current score: %d >\n", m_current_game_score);
     }
 }

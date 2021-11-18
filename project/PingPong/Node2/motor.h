@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define MOTOR_POS_MAX_ABS (5000)
+#define MOTOR_POS_MAX_ABS (10000)
 
 void motor_init(void);
 void motor_speed_set(int32_t speed);

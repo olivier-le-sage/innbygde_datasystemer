@@ -2,6 +2,8 @@
 #include "sam.h"
 #include "timer.h"
 #include "systick.h"
+#include "controls.h"
+#include "joystick_state.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -13,13 +15,13 @@
 // Parameters for the PID controller. TODO: tune
 // The representation used is fixed-point with a shift of 7 (so 2^7 = 128 <=> 1)
 #define M_FIXED_POINT_SHIFT 7
-#define K_P 10  // = 0.6640625  (20)
-#define K_I 1   // = 0.015625  (0)
-#define K_D 20  // = 0.5859375  (4)
+#define K_P 25  // = 0.6640625  (20)
+#define K_I 5   // = 0.015625  (0)
+#define K_D 0  // = 0.5859375  (4)
 
-#define PID_MAX_SUM_ERROR (INT32_MAX / (K_P + 1))
-#define PID_MAX_ERROR     (INT32_MAX / (K_I + 1))
-#define PID_MAX_I_TERM    (INT32_MAX / 2)
+#define PID_MAX_SUM_ERROR (INT16_MAX)
+#define PID_MAX_ERROR     (INT16_MAX)
+#define PID_MAX_I_TERM    (INT16_MAX / 2)
 
 #define DACC_MIN (0)
 #define DACC_MAX (((1 << 12) - 1))
@@ -41,6 +43,9 @@
 #define M_QENC_D5 (1 << 6) // PIOC pin 6 // (arduino 17) // PIN38
 #define M_QENC_D6 (1 << 7) // PIOC pin 7 // (arduino 18) // PIN39
 #define M_QENC_D7 (1 << 8) // PIOC pin 8 // (arduino 15) // PIN40
+
+extern joystick_direction_t joystick_x_dir;
+extern joystick_direction_t joystick_y_dir;
 
 // Maps to the state of the DIR pin. TODO: Confirm that DIR = 0 is to the right and not left
 typedef enum
@@ -84,21 +89,30 @@ static int16_t m_pid_controller_next_value(void)
     p_term = K_P * error;
 
     temp_sum_error = m_pid_state.pid_controller_sum_error + error;
+
     if (temp_sum_error > PID_MAX_SUM_ERROR)
     {
-        i_term = PID_MAX_I_TERM;
         m_pid_state.pid_controller_sum_error = PID_MAX_SUM_ERROR;
     }
     else if (temp_sum_error < -PID_MAX_SUM_ERROR)
     {
-        i_term = -PID_MAX_I_TERM;
         m_pid_state.pid_controller_sum_error = -PID_MAX_SUM_ERROR;
     }
-    else
+	else
     {
-        i_term = K_I * m_pid_state.pid_controller_sum_error;
         m_pid_state.pid_controller_sum_error = temp_sum_error;
     }
+
+	i_term = K_I * m_pid_state.pid_controller_sum_error;
+
+	if (i_term > PID_MAX_I_TERM)
+	{
+		i_term = PID_MAX_I_TERM;
+	}
+	else if (i_term < -PID_MAX_I_TERM)
+	{
+		i_term = -PID_MAX_I_TERM;
+	}
 
     d_term = K_D * (m_pid_state.motor_last_pos - m_pid_state.motor_current_pos);
 
@@ -107,6 +121,15 @@ static int16_t m_pid_controller_next_value(void)
     // Sum the P, D and I terms to obtain the output
     // Shift down to convert back from fixed-point numbers
     next_adjust = (p_term + i_term + d_term) / (int32_t)(1 << M_FIXED_POINT_SHIFT);
+
+	if (next_adjust > ((1 << 12) - 1))
+	{
+		next_adjust =  ((1 << 12) - 1);
+	}
+	else if (next_adjust < -1 * ((1 << 12) - 1))
+	{
+		next_adjust = -1 * ((1 << 12) - 1);
+	}
 
     return (int16_t)next_adjust;
 }
@@ -183,9 +206,25 @@ static int16_t m_read_quadrature_encoder_value(void)
   return (int16_t)((qenc_msb << 8) | qenc_lsb);
 }
 
+static void m_update_motor_target_based_on_joystick_state(void)
+{
+	const int32_t joystick_impact_on_motor_per_tick = 100;	
+
+	if (joystick_x_dir == RIGHT)
+	{
+		motor_pos_adjust(-joystick_impact_on_motor_per_tick);
+	}
+	else if (joystick_x_dir == LEFT)
+	{
+		motor_pos_adjust(joystick_impact_on_motor_per_tick);
+	}
+}
+
 static void m_systick_handle(void)
 {
-	const int16_t quadrature_encoder_value = m_read_quadrature_encoder_value();
+	m_update_motor_target_based_on_joystick_state();
+	
+	const volatile int16_t quadrature_encoder_value = m_read_quadrature_encoder_value();
 	
 	/* The value of the quadrature encoder counter indicates how much the motor has moved since
 	 * the last time it was polled.
@@ -194,15 +233,15 @@ static void m_systick_handle(void)
 
 	const volatile int16_t pid_adjust = m_pid_controller_next_value();
 
-	if (pid_adjust < 0)
-	{
-		PIOD->PIO_SODR |= M_QENC_DIR;
-		m_next_adjust = -1 * pid_adjust;
-	}
-	else
+	if (pid_adjust > 0)
 	{
 		PIOD->PIO_CODR |= M_QENC_DIR;
 		m_next_adjust = pid_adjust;
+	}
+	else
+	{
+		PIOD->PIO_SODR |= M_QENC_DIR;
+		m_next_adjust = -1 * pid_adjust;
 	}
 
 	m_dacc_write_next_value();
@@ -287,7 +326,7 @@ void motor_init(void)
 	DACC->DACC_WPMR = DACC_WPMR_WPKEY(0x444143);
     DACC->DACC_MR = DACC_MR_TRGEN_DIS |
                     DACC_MR_WORD_HALF |  // Use half-word mode (could maybe use word mode)
-                    DACC_MR_REFRESH(32) |
+                    DACC_MR_REFRESH(64) |
                     DACC_MR_USER_SEL_CHANNEL0 |  // Use channel 0
                     DACC_MR_TAG_DIS |  // Don't use tag mode
                     DACC_MR_MAXS_NORMAL |  // Don't use max speed mode
