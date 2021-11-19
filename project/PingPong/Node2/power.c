@@ -11,6 +11,6 @@ void power_sleep(void)
     __ISB();
     __DSB();
 
-	// Go to sleep
-	__WFE();
+	// Sleep until interrupt occurs
+	__WFI();
 }
