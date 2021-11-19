@@ -54,21 +54,6 @@ static void m_format_hex_byte(char * out, uint8_t value)
 	out[1] = lsb < 0xA ? '0' + lsb : 'A' + (lsb - 0xA);
 }
 
-static void m_toggle_solenoid_relay(void)
-{
-	PIOD->PIO_CODR |= M_SOLENOID_PIN;
-	for (int i = 0; i < 100000; i++)
-	{
-		asm("nop");
-		asm("nop");
-		asm("nop");
-		asm("nop");
-		asm("nop");
-	}
-
-	PIOD->PIO_SODR |= M_SOLENOID_PIN;
-}
-
 static void m_print_can_msg(const can_id_t * id, const can_data_t * data)
 {
 	if (data)
