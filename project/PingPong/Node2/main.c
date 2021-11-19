@@ -29,12 +29,9 @@ extern joystick_direction_t joystick_y_dir;
 
 // Pin used to control the solenoid
 #define M_SOLENOID_PIN (1 << 3) // PORTD pin used to toggle solenoid // PIN28 // Arduino pin 27
-#define M_SCORE_TXBUF_NO (0)
 
 /* Goals are registered when the IR beam is blocked. 1 block = 1 point */
 static uint32_t m_current_game_score;
-static volatile bool m_send_game_score;
-static volatile bool m_send_game_score_in_progress;
 
 static inline bool atomic_set(volatile bool * flag)
 {
@@ -178,10 +175,6 @@ static void m_handle_can_rx(uint8_t rx_buf_no, const can_msg_rx_t *msg)
 
 static void m_handle_can_tx(uint8_t tx_buf_no)
 {
-	if (tx_buf_no == M_SCORE_TXBUF_NO)
-	{
-		m_send_game_score_in_progress = false;
-	}
 }
 
 static void m_can_init(void)
@@ -209,29 +202,6 @@ static void m_can_init(void)
 static void m_score_reset(void)
 {
 	m_current_game_score = 0;
-}
-
-static bool m_score_send(void)
-{
-	static can_id_t id = { .extended = false, .value = CAN_SCORE_MSG_ID };
-	static uint32_t score;
-	static can_data_t data = { .data = (const uint8_t *) &score, .len = sizeof(score) };
-
-	if (!atomic_set(&m_send_game_score_in_progress))
-	{
-		return false;
-	}
-
-	score = m_current_game_score;
-
-	uint8_t rc = can_data_send(M_SCORE_TXBUF_NO, &id, &data);
-	if (rc != CAN_SUCCESS)
-	{
-		m_send_game_score_in_progress = false;
-		return false;
-	}
-
-	return true;
 }
 
 static void m_sleep(void)
@@ -275,24 +245,15 @@ int main(void)
 
 	systick_enable();
 
-	m_send_game_score = true;
-
     while (1)
     {
 		/* Poll IR to get the user score. */
 		if (ir_triggered_get_reset())
 		{
 			m_current_game_score++;
-			m_send_game_score = true;
+			uart_printf("Score: %lu\n", m_current_game_score);
 		}
 
-		if (m_send_game_score)
-		{
-			m_send_game_score = !m_score_send();
-		}
-		else
-		{
-			m_sleep();
-		}
+		m_sleep();
     }
 }
